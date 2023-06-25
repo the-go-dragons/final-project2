@@ -5,10 +5,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/golang-migrate/migrate/v4"
-	pg "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
-	_ "github.com/the-go-dragons/final-project2/internal/domain"
+	model "github.com/the-go-dragons/final-project2/internal/domain"
 	"github.com/the-go-dragons/final-project2/pkg/config"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -27,13 +25,13 @@ var (
 )
 
 func init() {
-	user = config.GetEnv("POSTGRES_USER", "")
-	password = config.GetEnv("POSTGRES_PASSWORD", "")
-	db = config.GetEnv("POSTGRES_DB", "")
-	host = config.GetEnv("DATABASE_HOST", "")
-	port = config.GetEnv("DATABASE_PORT", "")
-	ssl = config.GetEnv("POSTGRES_SSL", "")
-	timezone = config.GetEnv("POSTGRES_TIMEZONE", "")
+	user = config.GetEnv("POSTGRES_USER")
+	password = config.GetEnv("POSTGRES_PASSWORD")
+	db = config.GetEnv("POSTGRES_DB")
+	host = config.GetEnv("DATABASE_HOST")
+	port = config.GetEnv("DATABASE_PORT")
+	ssl = config.GetEnv("POSTGRES_SSL")
+	timezone = config.GetEnv("POSTGRES_TIMEZONE")
 }
 
 func GetDSN() string {
@@ -98,22 +96,26 @@ func AutoMigrateDB() error {
 		log.Fatal(err)
 	}
 
-	sqlDB, err := conn.DB()
-	if err != nil {
-		log.Fatal(err)
-	}
+	err = conn.AutoMigrate(
+		&model.User{},
+	)
 
-	driver, err := pg.WithInstance(sqlDB, &pg.Config{})
-	if err != nil {
-		log.Fatal(err)
-	}
+	// sqlDB, err := conn.DB()
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 
-	migrate, err := migrate.NewWithDatabaseInstance(
-		"file://./pkg/database/migrations",
-		"postgres", driver)
-	if err != nil {
-		log.Fatal(err)
-	}
-	migrate.Up()
+	// driver, err := pg.WithInstance(sqlDB, &pg.Config{})
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+
+	// migrate, err := migrate.NewWithDatabaseInstance(
+	// 	"file://./pkg/database/migrations",
+	// 	"postgres", driver)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// migrate.Up()
 	return err
 }

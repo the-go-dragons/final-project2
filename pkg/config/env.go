@@ -15,10 +15,11 @@ func LoadEnvVariables() {
 }
 
 // This function can be used to get ENV Var with default value
-func GetEnv(key, defaultVal string) string {
+func GetEnv(key string) string {
 	value := os.Getenv(key)
 	if len(value) == 0 {
-		return defaultVal
+		log.Fatal(key + " is not found from env files!")
+		return ""
 	}
 	return value
 }

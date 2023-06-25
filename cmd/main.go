@@ -1,9 +1,10 @@
 package main
 
 import (
-	"fmt"
-	"os"
+	"log"
 
+	"github.com/the-go-dragons/final-project2/internal/app"
+	"github.com/the-go-dragons/final-project2/pkg/config"
 	"github.com/the-go-dragons/final-project2/pkg/database"
 )
 
@@ -11,5 +12,7 @@ func main() {
 	// config.LoadEnvVariables()
 	database.CreateDBConnection()
 	database.AutoMigrateDB()
-	fmt.Println(os.Getenv("POSTGRES_PASSWORD"))
+	app := app.NewApp()
+	// seeder.Run()
+	log.Fatalln(app.Start(config.GetEnv("EXPOSE_PORT")))
 }

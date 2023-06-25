@@ -5,11 +5,11 @@ import (
 )
 
 type User struct {
-	ID              int       `json:"id"`
+	ID              uint      `json:"id"`
 	Username        string    `json:"username"`
 	Password        string    `json:"password"`
-	Email           string    `json:"email"`
-	Phone           string    `json:"phone"`
-	CreatedAt       time.Time `json:"createdat"`
-	IsLoginRequired bool      `json:"isloginrequired" gorm:"default:false"`
+	CreatedAt       time.Time `json:"created_at"`
+	IsLoginRequired bool      `json:"is_login_required" gorm:"default:true"`
+	IsAdmin         bool      `json:"is_admin" gorm:"default:false"`
+	IsActive        bool      `json:"is_active" gorm:"default:true"`
 }
