@@ -14,5 +14,5 @@ func main() {
 	database.AutoMigrateDB()
 	app := app.NewApp()
 	// seeder.Run()
-	log.Fatalln(app.Start(config.GetEnv("EXPOSE_PORT")))
+	log.Fatalln(app.Start(config.Config.Server.Port))
 }
