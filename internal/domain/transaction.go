@@ -15,8 +15,16 @@ const (
 
 type Transaction struct {
 	gorm.Model
-	WalletID        int
-	Amount          int64
-	TransactionDate time.Time
-	Status          TransactionStatus
+	
+	ID             uint              `json:"id"`
+	UserId         uint              `json:"userId"`
+	User           User              `json:"user"`
+	WalletID       int               `json:"walletId"`
+	Wallet         int               `json:"wallet"`
+	Amount         uint64            `json:"amount"`
+	Subscription   Subscription      `json:"subscriptionId"`
+	SubscriptionId uint              `json:"subscription"`
+	CreatedAt      time.Time         `json:"createdAt"`
+	UpdatedAt      time.Time         `json:"updatedAt"`
+	Status         TransactionStatus `json:"status"`
 }
