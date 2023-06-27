@@ -8,6 +8,7 @@ require (
 	github.com/gorilla/sessions v1.2.1
 	github.com/joho/godotenv v1.5.1
 	github.com/labstack/echo/v4 v4.10.2
+	github.com/lib/pq v1.10.2
 	golang.org/x/crypto v0.8.0
 	gorm.io/driver/postgres v1.5.2
 	gorm.io/gorm v1.25.1

@@ -1,3 +1,7 @@
+/*	This module has two kind of databse connection.
+	One is for main project and the other is for testing.
+*/
+
 package database
 
 import (
@@ -22,6 +26,8 @@ var (
 	timezone string
 	user     string
 	password string
+
+	testDb string
 )
 
 func init() {
@@ -32,11 +38,17 @@ func init() {
 	port = config.GetEnv("DATABASE_PORT")
 	ssl = config.GetEnv("POSTGRES_SSL")
 	timezone = config.GetEnv("POSTGRES_TIMEZONE")
+
+	testDb = config.GetEnv("POSTGRES_TEST_DB")
 }
 
 func GetDSN() string {
 	conStr := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=%s TimeZone=%s", host, user, password, db, port, ssl, timezone)
-	// fmt.Printf("ConnectionString = \"%v\"\n", conStr)  // DEBUG: Present connection string
+	return conStr
+}
+
+func GetTestDSN() string {
+	conStr := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=%s TimeZone=%s", host, user, password, testDb, port, ssl, timezone)
 	return conStr
 }
 
@@ -48,6 +60,37 @@ func CreateDBConnection() error {
 
 	db, err := gorm.Open(postgres.New(postgres.Config{
 		DSN:                  GetDSN(),
+		PreferSimpleProtocol: true, // disables implicit prepared statement usage
+	}), &gorm.Config{})
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	sqlDB, err := db.DB()
+
+	sqlDB.SetConnMaxIdleTime(time.Minute * 5)
+
+	// SetMaxIdleConns sets the maximum number of connections in the idle connection pool.
+	sqlDB.SetMaxIdleConns(10)
+
+	// SetMaxOpenConns sets the maximum number of open connections to the database.
+	sqlDB.SetMaxOpenConns(100)
+
+	// SetConnMaxLifetime sets the maximum amount of time a connection may be reused.
+	sqlDB.SetConnMaxLifetime(time.Hour)
+	dbConn = db
+	return err
+}
+
+func CreateTestDBConnection() error {
+	// Close the existing connection if open
+	if dbConn != nil {
+		CloseDBConnection(dbConn)
+	}
+
+	db, err := gorm.Open(postgres.New(postgres.Config{
+		DSN:                  GetTestDSN(),
 		PreferSimpleProtocol: true, // disables implicit prepared statement usage
 	}), &gorm.Config{})
 
