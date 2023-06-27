@@ -17,7 +17,7 @@ var (
 
 	db       string
 	host     string
-	port     string
+	port     int
 	ssl      string
 	timezone string
 	user     string
@@ -25,17 +25,17 @@ var (
 )
 
 func init() {
-	user = config.GetEnv("POSTGRES_USER")
-	password = config.GetEnv("POSTGRES_PASSWORD")
-	db = config.GetEnv("POSTGRES_DB")
-	host = config.GetEnv("DATABASE_HOST")
-	port = config.GetEnv("DATABASE_PORT")
-	ssl = config.GetEnv("POSTGRES_SSL")
-	timezone = config.GetEnv("POSTGRES_TIMEZONE")
+	user = config.Config.Database.User
+	password = config.Config.Database.Password
+	db = config.Config.Database.Name
+	host = config.Config.Database.Host
+	port = config.Config.Database.Port
+	ssl = config.Config.Database.Ssl
+	timezone = config.Config.Database.Timezone
 }
 
 func GetDSN() string {
-	conStr := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=%s TimeZone=%s", host, user, password, db, port, ssl, timezone)
+	conStr := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=%s TimeZone=%s", host, user, password, db, port, ssl, timezone)
 	// fmt.Printf("ConnectionString = \"%v\"\n", conStr)  // DEBUG: Present connection string
 	return conStr
 }
@@ -98,6 +98,9 @@ func AutoMigrateDB() error {
 
 	err = conn.AutoMigrate(
 		&model.User{},
+		&model.Wallet{},
+		&model.Payment{},
+		&model.Transaction{},
 	)
 
 	// sqlDB, err := conn.DB()

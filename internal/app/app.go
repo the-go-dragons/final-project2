@@ -15,7 +15,7 @@ import (
 
 var (
 	store  = sessions.NewCookieStore()
-	secret = config.GetEnv("JWT_TOKEN_EXPIRE_HOURS")
+	secret = config.Config.Jwt.Token.Secret.Key
 )
 
 type App struct {
@@ -31,8 +31,8 @@ func NewApp() *App {
 	}
 }
 
-func (application *App) Start(portAddress string) error {
-	err := application.E.Start(fmt.Sprintf(":%s", portAddress))
+func (application *App) Start(portAddress int) error {
+	err := application.E.Start(fmt.Sprintf(":%d", portAddress))
 	application.E.Logger.Fatal(err)
 	return err
 }
