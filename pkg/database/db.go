@@ -24,7 +24,7 @@ var (
 	password string
 )
 
-func init() {
+func Load() {
 	user = config.Config.Database.User
 	password = config.Config.Database.Password
 	db = config.Config.Database.Name
