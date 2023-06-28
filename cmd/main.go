@@ -9,7 +9,8 @@ import (
 )
 
 func main() {
-	// config.LoadEnvVariables()
+	config.Load()
+	database.Load()
 	database.CreateDBConnection()
 	database.AutoMigrateDB()
 	app := app.NewApp()
