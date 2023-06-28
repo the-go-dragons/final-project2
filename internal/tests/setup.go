@@ -4,11 +4,17 @@ import (
 	"database/sql"
 	"fmt"
 
+	// _ "github.com/lib/pq"
+	// "github.com/the-go-dragons/final-project2/internal/app"
+	// "github.com/the-go-dragons/final-project2/pkg/database"
+
+	"path"
+	"runtime"
+
 	_ "github.com/lib/pq"
 	"github.com/the-go-dragons/final-project2/internal/app"
 	"github.com/the-go-dragons/final-project2/pkg/config"
 	"github.com/the-go-dragons/final-project2/pkg/database"
-
 	"gorm.io/gorm"
 )
 
@@ -18,31 +24,38 @@ var GormDb *gorm.DB
 
 var RouteApp *app.App
 
+func init() {
+	_, filename, _, _ := runtime.Caller(0)
+	dir := path.Join(path.Dir(filename), "../..")
+	config.Path = dir
+}
+
 func Setup() {
 	var err error
-	config.LoadTestEnvVariables()
-
+	// config.LoadTestEnvVariables()
+	config.Load()
+	database.Load()
 	// Open a connection to the test database
-	testConStr := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=%s",
-		config.GetEnv("POSTGRES_USER"),
-		config.GetEnv("POSTGRES_PASSWORD"),
-		config.GetEnv("DATABASE_HOST"),
-		config.GetEnv("DATABASE_PORT"),
-		config.GetEnv("POSTGRES_TEST_DB"),
-		config.GetEnv("POSTGRES_SSL"),
+	testConStr := fmt.Sprintf("postgresql://%s:%s@%s:%d/%s?sslmode=%s",
+		config.Config.Database.User,
+		config.Config.Database.Password,
+		config.Config.Database.Host,
+		config.Config.Database.Port,
+		config.Config.Database.Test,
+		config.Config.Database.Ssl,
 	)
 	TestPgDb, err = sql.Open("postgres", testConStr)
 	if err != nil {
 		panic(err)
 	}
 
-	// Drop all tables
+	//Drop all tables
 	_, err = TestPgDb.Exec("DROP SCHEMA public CASCADE; CREATE SCHEMA public;")
 	if err != nil {
 		panic(err)
 	}
 
-	// Create databse connection and migrate tables
+	//Create databse connection and migrate tables
 	database.CreateTestDBConnection()
 	database.AutoMigrateDB()
 	GormDb, err = database.GetDatabaseConnection()
