@@ -33,10 +33,16 @@ services:
     build:
       context: .
       dockerfile: ./Dockerfile
-    command: "./wait-for-it.sh ${DATABASE_HOST}:${DATABASE_PORT} -- ./main"
+    command: >
+      /bin/sh -c "
+      ./wait-for-it.sh ${DATABASE_HOST}:${DATABASE_PORT} &&
+      ./wait-for-it.sh message-broker:5672 &&
+      ./main
+      "
     container_name: sms-backend
     depends_on:
       - sms-postgres
+      - sms-message-broker
     hostname: backend
     working_dir: /root/
     # restart: always
@@ -45,5 +51,20 @@ services:
     ports:
       - "${EXPOSE_PORT}:${EXPOSE_PORT}"
 
+  sms-message-broker:
+    image: rabbitmq:3-management-alpine
+    container_name: message-broker
+    ports:
+      - 5672:5672 # for sender and consumer connections
+      - 15672:15672 # for serve RabbitMQ GUI
+    volumes:
+      - rabbitmq-lib:/var/lib/rabbitmq
+      - rabbitmq-log:/var/log/rabbitmq
+    restart: always
+    # networks:
+    #   - dev-network
+
 volumes:
   airplane-postgres:
+  rabbitmq-lib:
+  rabbitmq-log:

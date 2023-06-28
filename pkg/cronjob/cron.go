@@ -9,8 +9,10 @@ import (
 var CronJobRunnser *cron.Cron
 
 func NewCronJobRunner() {
-	CronJobRunnser = cron.New()
-	CronJobRunnser.Start()
+	if CronJobRunnser == nil {
+		CronJobRunnser = cron.New()
+		CronJobRunnser.Start()
+	}
 	fmt.Println("Cron runner started")
 }
 
