@@ -16,7 +16,7 @@ type SMSBody struct {
 }
 
 func Connect() {
-	amqpServerURL := config.GetEnv("AMQP_SERVER_URL")
+	amqpServerURL := config.Config.Ribbitmq.Url
 
 	// Create a new RabbitMQ connection.
 	conn, err := amqp.Dial(amqpServerURL)

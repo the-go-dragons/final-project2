@@ -14,7 +14,10 @@ import (
 )
 
 var (
-	store = sessions.NewCookieStore()
+	store     = sessions.NewCookieStore()
+	getSecret = func() string {
+		return config.Config.Jwt.Token.Secret.Key
+	}
 )
 
 type App struct {
@@ -30,8 +33,8 @@ func NewApp() *App {
 	}
 }
 
-func (application *App) Start(portAddress string) error {
-	err := application.E.Start(fmt.Sprintf(":%s", portAddress))
+func (application *App) Start(portAddress int) error {
+	err := application.E.Start(fmt.Sprintf(":%d", portAddress))
 	application.E.Logger.Fatal(err)
 	return err
 }
@@ -48,14 +51,26 @@ func routing(e *echo.Echo) {
 	userUsecase := usecase.NewUserUsecase(userRepo)
 	userHandler := handlers.NewUserHandler(userUsecase)
 
+	paymentRepo := persistence.NewPaymentRepository()
+	paymentService := usecase.NewPayment(paymentRepo)
+	paymentHandler := handlers.NewPaymentHandler(paymentService)
+
+	walletRepo := persistence.NewWalletRepository()
+	trxRepo := persistence.NewTransactionRepository()
+	walletService := usecase.NewWallet(walletRepo, paymentRepo, trxRepo)
+	walletHandler := handlers.NewWalletHandler(walletService)
+
 	e.POST("/signup", userHandler.Signup)
 	e.POST("/login", userHandler.Login)
 	e.GET("/logout", userHandler.Logout, customeMiddleware.RequireAuth)
+	e.GET("/payments/pay/:paymentId", paymentHandler.Pay)
+	e.POST("/payments/callback", paymentHandler.Callback)
+	e.POST("/wallets/charge-request", walletHandler.CharageRequest)
+	e.POST("/wallets/finalize-charge", walletHandler.FinalizeCharge)
 }
 
 func initializeSessionStore() {
-	secret := config.GetEnv("JWT_TOKEN_EXPIRE_HOURS")
-	store = sessions.NewCookieStore([]byte(secret))
+	store = sessions.NewCookieStore([]byte(getSecret()))
 
 	// Set session options
 	store.Options = &sessions.Options{

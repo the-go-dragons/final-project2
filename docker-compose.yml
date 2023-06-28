@@ -45,7 +45,7 @@ services:
       - sms-message-broker
     hostname: backend
     working_dir: /root/
-    # restart: always
+    restart: always
     env_file:
       - ".env"
     ports:

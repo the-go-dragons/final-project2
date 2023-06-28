@@ -11,12 +11,13 @@ import (
 )
 
 func main() {
-	config.LoadEnvVariables()
+	config.Load()
+	database.Load()
 	database.CreateDBConnection()
 	database.AutoMigrateDB()
 	app := app.NewApp()
 	// seeder.Run()
 	cronjob.NewCronJobRunner()
 	rabbitmq.Connect()
-	log.Info(app.Start(config.GetEnv("EXPOSE_PORT")))
+	log.Fatalln(app.Start(config.Config.Server.Port))
 }
