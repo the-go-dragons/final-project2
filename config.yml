@@ -22,7 +22,7 @@ encryption:
     key: Wdn29o32sxQAS2qsQmjs23dx8s
 payment:
   redirect:
-    url: http://localhost:8080/payment/callback
+    url: http://localhost:9090/payments/callback
   gateways:
     saderat:
       terminal:
