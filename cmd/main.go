@@ -9,10 +9,11 @@ import (
 )
 
 func main() {
-	config.LoadEnvVariables()
+	config.Load()
+	database.Load()
 	database.CreateDBConnection()
 	database.AutoMigrateDB()
 	app := app.NewApp()
 	// seeder.Run()
-	log.Fatalln(app.Start(config.GetEnv("EXPOSE_PORT")))
+	log.Fatalln(app.Start(config.Config.Server.Port))
 }
