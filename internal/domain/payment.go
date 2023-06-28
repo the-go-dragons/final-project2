@@ -9,15 +9,18 @@ import (
 type PaymentStatus string
 
 const (
-	PAID   PaymentStatus = "Paid"
-	UNPAID PaymentStatus = "Unpaid"
+	PAID    PaymentStatus = "Paid"
+	UNPAID  PaymentStatus = "Unpaid"
+	APPLIED PaymentStatus = "Applied"
 )
 
 type Payment struct {
 	gorm.Model
-	Amount      int64
-	PaymentDate time.Time
-	WalletID    int
-	Merchant    string
-	Status      PaymentStatus
+
+	Amount      int64         `json:"amount"`
+	PaymentDate time.Time     `json:"paymentDate"`
+	WalletID    int           `json:"walletId"`
+	Wallet      Wallet        `json:"wallet"`
+	Merchant    string        `json:"merchant"`
+	Status      PaymentStatus `json:"status"`
 }
