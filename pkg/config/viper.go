@@ -10,10 +10,6 @@ import (
 
 var Config *Configuration
 
-func init() {
-	Load()
-}
-
 func Load() {
 	if Config == nil {
 		load()
