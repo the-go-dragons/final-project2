@@ -46,6 +46,12 @@ func GetDSN() string {
 	return conStr
 }
 
+func GetTestDSN() string {
+	conStr := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=%s TimeZone=%s", host, user, password, db, port, ssl, timezone)
+	// fmt.Printf("ConnectionString = \"%v\"\n", conStr)  // DEBUG: Present connection string
+	return conStr
+}
+
 func CreateDBConnection() error {
 	// Close the existing connection if open
 	if dbConn != nil {
