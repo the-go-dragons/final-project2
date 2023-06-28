@@ -2,6 +2,7 @@ package http
 
 import (
 	"net/http"
+	"strconv"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
@@ -14,8 +15,8 @@ import (
 )
 
 type LoginRequest struct {
-	Username string
-	Password string
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
 
 type LoginResponse struct {
@@ -24,10 +25,13 @@ type LoginResponse struct {
 }
 
 func GenerateToken(user *domain.User) (string, error) {
-	expirationHoursCofig := config.Config.Jwt.Token.Expire.Hours
-	JwtTokenSecretConfig := config.Config.Jwt.Token.Secret.Key
+	expirationHoursCofig := config.GetEnv("JWT_TOKEN_EXPIRE_HOURS")
+	JwtTokenSecretConfig := config.GetEnv("JWT_TOKEN_SECRET_KEY")
 
-	duration := time.Duration(expirationHoursCofig) * time.Hour
+	expirationCofigHoursValue, _ := strconv.ParseUint(expirationHoursCofig, 10, 64)
+	uintExpirationCofigHoursValue := uint(expirationCofigHoursValue)
+
+	duration := time.Duration(uintExpirationCofigHoursValue) * time.Hour
 	expirationTime := time.Now().Add(duration)
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{

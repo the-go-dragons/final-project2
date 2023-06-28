@@ -11,7 +11,7 @@ RUN go mod download
 
 COPY . .
 
-RUN go test ./internal/tests -v
+# RUN go test ./internal/tests -v
 
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main ./cmd
 

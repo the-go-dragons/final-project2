@@ -14,8 +14,7 @@ import (
 )
 
 var (
-	store  = sessions.NewCookieStore()
-	secret = config.Config.Jwt.Token.Secret.Key
+	store = sessions.NewCookieStore()
 )
 
 type App struct {
@@ -31,8 +30,8 @@ func NewApp() *App {
 	}
 }
 
-func (application *App) Start(portAddress int) error {
-	err := application.E.Start(fmt.Sprintf(":%d", portAddress))
+func (application *App) Start(portAddress string) error {
+	err := application.E.Start(fmt.Sprintf(":%s", portAddress))
 	application.E.Logger.Fatal(err)
 	return err
 }
@@ -55,6 +54,7 @@ func routing(e *echo.Echo) {
 }
 
 func initializeSessionStore() {
+	secret := config.GetEnv("JWT_TOKEN_EXPIRE_HOURS")
 	store = sessions.NewCookieStore([]byte(secret))
 
 	// Set session options
