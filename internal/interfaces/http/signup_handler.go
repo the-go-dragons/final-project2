@@ -9,8 +9,8 @@ import (
 )
 
 type SignupRequest struct {
-	Username string
-	Password string
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
 
 func (uh *UserHandler) Signup(c echo.Context) error {

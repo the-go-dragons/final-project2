@@ -6,7 +6,9 @@ require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/golang-migrate/migrate/v4 v4.16.2
 	github.com/gorilla/sessions v1.2.1
+	github.com/joho/godotenv v1.5.1
 	github.com/labstack/echo/v4 v4.10.2
+	github.com/lib/pq v1.10.2
 	github.com/spf13/viper v1.16.0
 	golang.org/x/crypto v0.9.0
 	gorm.io/driver/postgres v1.5.2

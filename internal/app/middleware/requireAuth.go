@@ -37,7 +37,7 @@ func RequireAuth(next echo.HandlerFunc) echo.HandlerFunc {
 			}
 
 			// hmacSampleSecret is a []byte containing your secret, e.g. []byte("my_secret_key")
-			return []byte(config.Config.Jwt.Token.Secret.Key), nil
+			return []byte(config.GetEnv("JWT_TOKEN_SECRET_KEY")), nil
 		})
 		if err != nil {
 			return c.JSON(http.StatusUnauthorized, MassageResponse{Message: fmt.Sprint("Invalid token: ", err.Error())})
