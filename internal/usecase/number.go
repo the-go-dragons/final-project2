@@ -45,3 +45,10 @@ func (n NumberService) Create(number NewNumberPayload) (domain.Number, error) {
 func (n NumberService) GetById(Id uint) (domain.Number, error) {
 	return n.numberRepo.Get(Id)
 }
+
+func (n NumberService) BuyOrRentNumber(number domain.Number, user domain.User, wallet domain.Wallet, totalPrice uint32) (domain.Number, error) {
+	wallet.Balance = wallet.Balance - uint(totalPrice)
+	n.walletRepo.Update(wallet)
+
+	return number, nil
+}

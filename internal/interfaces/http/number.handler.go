@@ -69,7 +69,6 @@ func (n NumberHandler) BuyOrRent(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, Response{Message: "Invalid number"})
 	}
 
-	fmt.Printf("req.NumberId: %v\n", req.NumberId)
 	number, err := n.number.GetById(req.NumberId)
 
 	if err != nil {
@@ -102,7 +101,8 @@ func (n NumberHandler) BuyOrRent(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, Response{Message: "your wallet has not enough balance to pay"})
 	}
 
-	userWallet.Balance = userWallet.Balance - uint(totalPrice)
+
+	_, err = n.number.BuyOrRentNumber(number, user, userWallet, totalPrice)
 
 	// _, err = n.number.Create(payload)
 	if err != nil {
