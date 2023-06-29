@@ -18,6 +18,6 @@ type Transaction struct {
 	Wallet         int               `json:"wallet"`
 	Amount         uint64            `json:"amount"`
 	Subscription   Subscription      `json:"subscriptionId"`
-	SubscriptionId uint              `json:"subscription"`
+	SubscriptionId uint              `json:"subscription" gorm:"default:null"`
 	Status         TransactionStatus `json:"status"`
 }
