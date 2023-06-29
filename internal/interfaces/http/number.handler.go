@@ -3,6 +3,7 @@ package http
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/asaskevich/govalidator"
 	"github.com/labstack/echo/v4"
@@ -76,17 +77,29 @@ func (n NumberHandler) BuyOrRent(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, Response{Message: "No number found whit this information"})
 	}
 
+	fmt.Printf("number.IsAvailable: %v\n", number.IsAvailable)
+
+	if !number.IsAvailable {
+		return c.JSON(http.StatusBadRequest, Response{Message: "Number is not available for buy or rent"})
+	}
+
 	if number.Type == 2 && !govalidator.IsInt(fmt.Sprintf("%d", req.Months)) {
 		return c.JSON(http.StatusBadRequest, Response{Message: "Invalid months"})
 	}
 
+	if number.Type == 2 && req.Months == 0 {
+		return c.JSON(http.StatusBadRequest, Response{Message: "Invalid months"})
+	}
+
 	var totalPrice uint32
+	var expirationDate time.Time
 
 	if number.Type == 1 {
 		totalPrice = number.Price
 	} else {
 		totalPrice = number.Price * uint32(req.Months)
-	}
+		expirationDate = time.Now().AddDate(0, int(req.Months), 0)
+    }
 
 	user := c.Get("user").(domain.User)
 
@@ -101,8 +114,7 @@ func (n NumberHandler) BuyOrRent(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, Response{Message: "your wallet has not enough balance to pay"})
 	}
 
-
-	_, err = n.number.BuyOrRentNumber(number, user, userWallet, totalPrice)
+	_, err = n.number.BuyOrRentNumber(number, user, userWallet, totalPrice, expirationDate)
 
 	// _, err = n.number.Create(payload)
 	if err != nil {

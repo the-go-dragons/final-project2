@@ -47,6 +47,7 @@ func routing(e *echo.Echo) {
 	e.Use(middleware.Secure())
 	e.Use(SessionMiddleware())
 	walletRepo := persistence.NewWalletRepository()
+	subscrptionRepo := persistence.NewSubscriptionRepository()
 
 	userRepo := persistence.NewUserRepository()
 	userUsecase := usecase.NewUserUsecase(userRepo, walletRepo)
@@ -61,7 +62,7 @@ func routing(e *echo.Echo) {
 	walletHandler := handlers.NewWalletHandler(walletService)
 
 	numberRepo := persistence.NewNumberRepository()
-	numberService := usecase.NewNumber(numberRepo, walletRepo)
+	numberService := usecase.NewNumber(numberRepo, walletRepo, subscrptionRepo)
 	numberHandler := handlers.NewNumberHandler(numberService, walletService)
 
 	// TODO: add /users route prefix
