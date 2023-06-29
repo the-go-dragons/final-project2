@@ -46,27 +46,38 @@ func routing(e *echo.Echo) {
 	e.Use(middleware.Recover())
 	e.Use(middleware.Secure())
 	e.Use(SessionMiddleware())
+	walletRepo := persistence.NewWalletRepository()
+	subscrptionRepo := persistence.NewSubscriptionRepository()
 
 	userRepo := persistence.NewUserRepository()
-	userUsecase := usecase.NewUserUsecase(userRepo)
+	userUsecase := usecase.NewUserUsecase(userRepo, walletRepo)
 	userHandler := handlers.NewUserHandler(userUsecase)
 
 	paymentRepo := persistence.NewPaymentRepository()
 	paymentService := usecase.NewPayment(paymentRepo)
 	paymentHandler := handlers.NewPaymentHandler(paymentService)
 
-	walletRepo := persistence.NewWalletRepository()
 	trxRepo := persistence.NewTransactionRepository()
 	walletService := usecase.NewWallet(walletRepo, paymentRepo, trxRepo)
 	walletHandler := handlers.NewWalletHandler(walletService)
 
+	numberRepo := persistence.NewNumberRepository()
+	numberService := usecase.NewNumber(numberRepo, walletRepo, subscrptionRepo)
+	numberHandler := handlers.NewNumberHandler(numberService, walletService)
+
+	// TODO: add /users route prefix
 	e.POST("/signup", userHandler.Signup)
 	e.POST("/login", userHandler.Login)
 	e.GET("/logout", userHandler.Logout, customeMiddleware.RequireAuth)
+
 	e.GET("/payments/pay/:paymentId", paymentHandler.Pay)
 	e.POST("/payments/callback", paymentHandler.Callback)
+	
 	e.POST("/wallets/charge-request", walletHandler.CharageRequest)
 	e.POST("/wallets/finalize-charge", walletHandler.FinalizeCharge)
+
+	e.PUT("/numbers", numberHandler.Create)
+	e.POST("/numbers/buy-rent", numberHandler.BuyOrRent, customeMiddleware.RequireAuth)
 }
 
 func initializeSessionStore() {
