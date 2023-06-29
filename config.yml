@@ -3,8 +3,8 @@ server:
 database:
   test: testsmsproject
   name: smsproject
-  user: admin
-  password: admin
+  user: postgres
+  password: 1236
   host: localhost
   port: 54321
   ssl: disable

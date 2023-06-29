@@ -8,7 +8,7 @@ import (
 	"github.com/the-go-dragons/final-project2/internal/usecase"
 )
 
-type WalletError struct {
+type Error struct {
 	Message string
 }
 
@@ -39,7 +39,7 @@ func (w WalletHandler) CharageRequest(c echo.Context) error {
 	var req WalletCharageRequest
 	err := c.Bind(&req)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, WalletError{Message: "Invaild charge request"})
+		return c.JSON(http.StatusBadRequest, Error{Message: "Invaild charge request"})
 	}
 	paymentId, err := w.wallet.ChargeRequest(req.WalletId, req.Amount)
 	if err != nil {
@@ -57,7 +57,7 @@ func (w WalletHandler) FinalizeCharge(c echo.Context) error {
 	var walletFChargeReq WalletFinalizeCharageRequest
 	err := c.Bind(&walletFChargeReq)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, WalletError{Message: "Invaild finalize charge request"})
+		return c.JSON(http.StatusBadRequest, Error{Message: "Invaild finalize charge request"})
 	}
 
 	walletId, err := w.wallet.FinalizeCharge(walletFChargeReq.PaymentId)
