@@ -10,6 +10,10 @@ import (
 	"github.com/the-go-dragons/final-project2/internal/usecase"
 )
 
+type NewSmsTemplateRequest struct {
+	Text string `json:"text"`
+}
+
 type SmsTemplateHandler struct {
 	smsTemplateUseCase *usecase.SmsTemplateUsecase
 }
@@ -23,10 +27,6 @@ func NewSmsTemplateHandler(smsTemplateUseCase *usecase.SmsTemplateUsecase) *SmsT
 	return &SmsTemplateHandler{
 		smsTemplateUseCase: smsTemplateUseCase,
 	}
-}
-
-type NewSmsTemplateRequest struct {
-	Text string `json:"text"`
 }
 
 func (smsh *SmsTemplateHandler) NewSmsTemplate(c echo.Context) error {
