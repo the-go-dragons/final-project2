@@ -13,6 +13,11 @@ type NumberHandler struct {
 	number *usecase.NumberService
 }
 
+type BuyNumberPayload struct {
+	NumberId uint
+	Months   uint
+}
+
 func NewNumberHandler(number usecase.NumberService) NumberHandler {
 	return NumberHandler{number: &number}
 }
@@ -21,7 +26,7 @@ func (n NumberHandler) Create(c echo.Context) error {
 	var req usecase.NewNumberPayload
 	err := c.Bind(&req)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, WalletError{Message: "Invalid number"})
+		return c.JSON(http.StatusBadRequest, Error{Message: "Invalid number"})
 	}
 
 	if !govalidator.Matches(req.Phone, `^(?:\+98|0)?9\d{9}$`) {
@@ -38,6 +43,38 @@ func (n NumberHandler) Create(c echo.Context) error {
 	}
 
 	_, err = n.number.Create(payload)
+	if err != nil {
+		fmt.Printf("err: %v\n", err)
+		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't create number"})
+	}
+	
+	return c.JSON(http.StatusOK, Response{Message: "Created"})
+}
+
+func (n NumberHandler) BuyOrRent(c echo.Context) error {
+	var req BuyNumberPayload
+	err := c.Bind(&req)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, Error{Message: "Invalid input"})
+	}
+
+	number, err := n.number.GetById(req.NumberId)
+	if err != nil {
+		fmt.Printf("err: %v\n", err)
+		return c.JSON(http.StatusInternalServerError, Response{Message: "No number found whit this information"})
+	}
+
+	var totalPrice uint32
+
+	if number.Type == 1 {
+		totalPrice = number.Price
+	} else {
+		totalPrice = number.Price * uint32(req.Months)
+	}
+
+	_ = totalPrice
+
+	// _, err = n.number.Create(payload)
 	if err != nil {
 		fmt.Printf("err: %v\n", err)
 		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't create user"})

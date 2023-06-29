@@ -20,7 +20,8 @@ func NewNumber(
 }
 
 type NewNumberPayload struct {
-	Phone       string                `json:"phone" `
+	Phone       string                `json:"phone"`
+	Price       uint32                `json:"price"`
     Type        domain.NumberTypeEnum `json:"type" `
 }
 
@@ -29,10 +30,15 @@ func (n NumberService) Create(number NewNumberPayload) (domain.Number, error) {
 	numberRecord := domain.Number{
 		Phone: number.Phone,
 		Type: number.Type,
+		Price: number.Price,
 		IsAvailable: true,
 		CreatedAt:  now,
 		UpdatedAt: now,
 	}
 
 	return n.numberRepo.Create(numberRecord)
+}
+
+func (n NumberService) GetById(Id uint) (domain.Number, error) {
+	return n.numberRepo.Get(Id)
 }

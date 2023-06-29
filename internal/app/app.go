@@ -76,6 +76,7 @@ func routing(e *echo.Echo) {
 	e.POST("/wallets/finalize-charge", walletHandler.FinalizeCharge)
 
 	e.PUT("/numbers", numberHandler.Create)
+	e.POST("/numbers/buy-rent", numberHandler.Create)
 }
 
 func initializeSessionStore() {
