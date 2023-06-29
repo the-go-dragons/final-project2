@@ -9,13 +9,16 @@ import (
 
 type NumberService struct {
 	numberRepo  persistence.NumberRepository
+	walletRepo persistence.WalletRepository
 }
 
 func NewNumber(
 	numberRepo persistence.NumberRepository,
+	walletRepo persistence.WalletRepository,
 ) NumberService {
 	return NumberService{
 		numberRepo: numberRepo,
+		walletRepo: walletRepo,
 	}
 }
 

@@ -69,3 +69,7 @@ func (w WalletService) FinalizeCharge(paymentID int) (uint, error) {
 	}
 	return uint(payment.WalletID), nil
 }
+
+func (w WalletService) GetByUserId(id uint) (domain.Wallet, error) {
+	return w.walletRepo.GetByUserId(id)
+}

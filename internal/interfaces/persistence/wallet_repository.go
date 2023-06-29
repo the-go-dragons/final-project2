@@ -11,6 +11,7 @@ type WalletRepository interface {
 	Update(input domain.Wallet) (domain.Wallet, error)
 	Get(id uint) (domain.Wallet, error)
 	ChargeWallet(walletID uint, amount uint64) error
+	GetByUserId(id uint) (domain.Wallet, error)
 }
 
 type WalletRepositoryImpl struct {
@@ -54,6 +55,19 @@ func (a WalletRepositoryImpl) Get(id uint) (domain.Wallet, error) {
 	db, _ := database.GetDatabaseConnection()
 
 	tx := db.First(&wallet, id)
+
+	if err := tx.Error; err != nil {
+		return wallet, err
+	}
+
+	return wallet, nil
+}
+
+func (a WalletRepositoryImpl) GetByUserId(id uint) (domain.Wallet, error) {
+	var wallet domain.Wallet
+	db, _ := database.GetDatabaseConnection()
+
+	tx := db.Where("user_id = ?", id).First(&wallet)
 
 	if err := tx.Error; err != nil {
 		return wallet, err
