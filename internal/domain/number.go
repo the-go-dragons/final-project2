@@ -6,19 +6,19 @@ import (
 	"gorm.io/gorm"
 )
 
-type TypeEnum byte
+type NumberTypeEnum byte
 
 const (
-    Sale TypeEnum = 1
-    Rent TypeEnum = 2
+    Sale NumberTypeEnum = 1
+    Rent NumberTypeEnum = 2
 )
 
 type Number struct {
 	gorm.Model
 	ID          uint      `json:"id"`
-	Phone       int       `json:"phone"`
+	Phone       string    `json:"phone"`
 	IsAvailable bool      `json:"isAvailable" gorm:"default:true"`
-	Type        TypeEnum  `json:"type" gorm:"default:1"`
+	Type        NumberTypeEnum  `json:"type" gorm:"default:1"`
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
 }

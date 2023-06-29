@@ -60,13 +60,22 @@ func routing(e *echo.Echo) {
 	walletService := usecase.NewWallet(walletRepo, paymentRepo, trxRepo)
 	walletHandler := handlers.NewWalletHandler(walletService)
 
+	numberRepo := persistence.NewNumberRepository()
+	numberService := usecase.NewNumber(numberRepo)
+	numberHandler := handlers.NewNumberHandler(numberService)
+
+	// TODO: add /users route prefix
 	e.POST("/signup", userHandler.Signup)
 	e.POST("/login", userHandler.Login)
 	e.GET("/logout", userHandler.Logout, customeMiddleware.RequireAuth)
+
 	e.GET("/payments/pay/:paymentId", paymentHandler.Pay)
 	e.POST("/payments/callback", paymentHandler.Callback)
+	
 	e.POST("/wallets/charge-request", walletHandler.CharageRequest)
 	e.POST("/wallets/finalize-charge", walletHandler.FinalizeCharge)
+
+	e.PUT("/numbers", numberHandler.Create)
 }
 
 func initializeSessionStore() {
