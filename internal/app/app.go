@@ -46,16 +46,16 @@ func routing(e *echo.Echo) {
 	e.Use(middleware.Recover())
 	e.Use(middleware.Secure())
 	e.Use(SessionMiddleware())
+	walletRepo := persistence.NewWalletRepository()
 
 	userRepo := persistence.NewUserRepository()
-	userUsecase := usecase.NewUserUsecase(userRepo)
+	userUsecase := usecase.NewUserUsecase(userRepo, walletRepo)
 	userHandler := handlers.NewUserHandler(userUsecase)
 
 	paymentRepo := persistence.NewPaymentRepository()
 	paymentService := usecase.NewPayment(paymentRepo)
 	paymentHandler := handlers.NewPaymentHandler(paymentService)
 
-	walletRepo := persistence.NewWalletRepository()
 	trxRepo := persistence.NewTransactionRepository()
 	walletService := usecase.NewWallet(walletRepo, paymentRepo, trxRepo)
 	walletHandler := handlers.NewWalletHandler(walletService)
