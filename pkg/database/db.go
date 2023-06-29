@@ -143,6 +143,7 @@ func AutoMigrateDB() error {
 		&model.Wallet{},
 		&model.Payment{},
 		&model.Transaction{},
+		&model.SMSTemplate{},
 	)
 
 	// sqlDB, err := conn.DB()

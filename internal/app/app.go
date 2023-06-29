@@ -60,6 +60,10 @@ func routing(e *echo.Echo) {
 	walletService := usecase.NewWallet(walletRepo, paymentRepo, trxRepo)
 	walletHandler := handlers.NewWalletHandler(walletService)
 
+	smsTemplateRepo := persistence.NewSmsTemplateRepository()
+	smsTemplateUsecase := usecase.NewSmsTemplateUsecase(smsTemplateRepo)
+	smsTemplateHandler := handlers.NewSmsTemplateHandler(smsTemplateUsecase)
+
 	e.POST("/signup", userHandler.Signup)
 	e.POST("/login", userHandler.Login)
 	e.GET("/logout", userHandler.Logout, customeMiddleware.RequireAuth)
@@ -67,6 +71,7 @@ func routing(e *echo.Echo) {
 	e.POST("/payments/callback", paymentHandler.Callback)
 	e.POST("/wallets/charge-request", walletHandler.CharageRequest)
 	e.POST("/wallets/finalize-charge", walletHandler.FinalizeCharge)
+	e.POST("/new-templates/new", smsTemplateHandler.NewSmsTemplate, customeMiddleware.RequireAuth)
 }
 
 func initializeSessionStore() {
