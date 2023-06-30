@@ -32,12 +32,9 @@ func (smsR *SmsTemplateRepository) GetById(id uint) (*domain.SMSTemplate, error)
 	return smsTemplate, nil
 }
 
-func (smsR *SmsTemplateRepository) GetByUserId(userId uint) (*domain.SMSTemplate, error) {
-	smsTemplate := new(domain.SMSTemplate)
+func (smsR *SmsTemplateRepository) GetByUserId(userId uint) ([]domain.SMSTemplate, error) {
+	var smsTemplate []domain.SMSTemplate
 	db, _ := database.GetDatabaseConnection()
-	db.Where("user_id = ?", userId).First(&smsTemplate)
-	if smsTemplate.ID == 0 {
-		return nil, errors.New("SMSTemplate not found")
-	}
+	db.Where("user_id = ?", userId).Find(&smsTemplate)
 	return smsTemplate, nil
 }

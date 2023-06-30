@@ -112,6 +112,7 @@ func routing(e *echo.Echo) {
 	e.POST("/sms/username", smsHandler.SendSMSByUsername, customeMiddleware.RequireAuth)
 
 	e.POST("/templates/new", smsTemplateHandler.NewSmsTemplate, customeMiddleware.RequireAuth)
+	e.GET("/templates", smsTemplateHandler.SmsTemplateList, customeMiddleware.RequireAuth)
 }
 
 func initializeSessionStore() {

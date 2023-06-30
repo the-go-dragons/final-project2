@@ -23,6 +23,6 @@ func (uu *SmsTemplateUsecase) GetById(id uint) (*domain.SMSTemplate, error) {
 	return uu.smsTemplateRepository.GetById(id)
 }
 
-func (uu *SmsTemplateUsecase) GetUserById(id uint) (*domain.SMSTemplate, error) {
-	return uu.smsTemplateRepository.GetById(id)
+func (uu *SmsTemplateUsecase) GetByUserId(UserId uint) ([]domain.SMSTemplate, error) {
+	return uu.smsTemplateRepository.GetByUserId(UserId)
 }

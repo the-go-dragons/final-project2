@@ -62,3 +62,27 @@ func (smsh *SmsTemplateHandler) NewSmsTemplate(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, SmsTemplateResponse{Message: "Created", SmsTemplateID: ressmsTemplate.ID})
 }
+
+func (smsh *SmsTemplateHandler) SmsTemplateList(c echo.Context) error {
+	user := c.Get("user").(domain.User)
+
+	templates, err := smsh.smsTemplateUseCase.GetByUserId(user.ID)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, Response{Message: "Cant get sms template list"})
+	}
+
+	var response []SmsTemplateResponse
+
+	for _, template := range templates {
+		response = append(response, SmsTemplateResponse{
+			Message:       template.Text,
+			SmsTemplateID: template.ID,
+		})
+	}
+
+	return c.JSON(http.StatusOK, response)
+}
+
+// func (smsh *SmsTemplateHandler) NewSmsWithTemplate(c echo.Context) error {
+
+// }
