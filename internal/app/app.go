@@ -70,8 +70,12 @@ func routing(e *echo.Echo) {
 	phoneBookHandler := handlers.NewPhoneBookHandler(phoneBookService)
 
 	contactRepo := persistence.NewContactRepository()
-	contactService := usecase.NewContact(phonebookRepo, contactRepo)
+	contactService := usecase.NewContact(phonebookRepo, contactRepo, numberRepo, subscrptionRepo)
 	contactHandler := handlers.NewContactHandler(contactService)
+
+	smsRepository := persistence.NewSmsHistoryRepository()
+	smsService := usecase.NewSmsService(smsRepository, *userRepo, phonebookRepo, numberRepo, subscrptionRepo)
+	smsHandler := handlers.NewSmsHandler(smsService, contactService)
 
 	// TODO: add /users route prefix
 	e.POST("/signup", userHandler.Signup)
@@ -98,6 +102,8 @@ func routing(e *echo.Echo) {
 	e.GET("/contact", contactHandler.GetAll)
 	e.GET("/contact/phonebook", contactHandler.GetByPhoneBook)
 	e.DELETE("/contact", contactHandler.Delete)
+
+	e.POST("/sms", smsHandler.SendSMS)
 }
 
 func initializeSessionStore() {
