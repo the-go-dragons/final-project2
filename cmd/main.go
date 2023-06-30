@@ -1,7 +1,7 @@
 package main
 
 import (
-	log "github.com/sirupsen/logrus"
+	"log"
 
 	"github.com/the-go-dragons/final-project2/internal/app"
 	"github.com/the-go-dragons/final-project2/pkg/config"
