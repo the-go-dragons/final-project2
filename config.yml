@@ -5,7 +5,7 @@ database:
   name: smsproject
   user: admin
   password: admin
-  host: postgres
+  host: localhost
   port: 54321
   ssl: disable
   timezone: Asia/Tehran
@@ -39,4 +39,5 @@ app:
   ticketFileName: pdf/ticket.pdf
 
 ribbitmq:
-  url: amqp://guest:guest@message-broker:5672
+  # url: amqp://guest:guest@message-broker:5672 # For docker-compose-prod.yml
+  url: amqp://guest:guest@localhost:5672 # For docker-compose.yml

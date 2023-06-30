@@ -29,6 +29,28 @@ services:
       - "5050:80"
     restart: always
 
+  sms-backend:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    command: >
+      /bin/sh -c "
+      ./wait-for-it.sh ${DATABASE_HOST}:${DATABASE_PORT} &&
+      ./wait-for-it.sh message-broker:5672 &&
+      ./main
+      "
+    container_name: sms-backend
+    depends_on:
+      - sms-postgres
+      - sms-message-broker
+    hostname: backend
+    working_dir: /root/
+    restart: always
+    env_file:
+      - ".env"
+    ports:
+      - "${EXPOSE_PORT}:${EXPOSE_PORT}"
+
   sms-message-broker:
     image: rabbitmq:3-management-alpine
     container_name: message-broker
