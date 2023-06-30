@@ -74,7 +74,7 @@ func routing(e *echo.Echo) {
 	contactHandler := handlers.NewContactHandler(contactService)
 
 	smsRepository := persistence.NewSmsHistoryRepository()
-	smsService := usecase.NewSmsService(smsRepository, *userRepo, phonebookRepo, numberRepo, subscrptionRepo)
+	smsService := usecase.NewSmsService(smsRepository, *userRepo, phonebookRepo, numberRepo, subscrptionRepo, contactRepo)
 	smsHandler := handlers.NewSmsHandler(smsService, contactService)
 
 	// TODO: add /users route prefix
@@ -94,8 +94,8 @@ func routing(e *echo.Echo) {
 	e.GET("/phonebook", phoneBookHandler.GetAll)
 	e.GET("/phonebook/username", phoneBookHandler.GetByUserName)
 	e.DELETE("/phonebook", phoneBookHandler.Delete)
-	e.POST("/phonebook", phoneBookHandler.Create)
-	e.PUT("/phonebook", phoneBookHandler.Edit)
+	e.POST("/phonebook", phoneBookHandler.Create, customeMiddleware.RequireAuth)
+	e.PUT("/phonebook", phoneBookHandler.Edit, customeMiddleware.RequireAuth)
 
 	e.POST("/contact", contactHandler.Create)
 	e.PUT("/contact", contactHandler.Edit)
@@ -103,7 +103,8 @@ func routing(e *echo.Echo) {
 	e.GET("/contact/phonebook", contactHandler.GetByPhoneBook)
 	e.DELETE("/contact", contactHandler.Delete)
 
-	e.POST("/sms", smsHandler.SendSMS)
+	e.POST("/sms", smsHandler.SendSMS, customeMiddleware.RequireAuth)
+	e.POST("/sms/username", smsHandler.SendSMSByUsername, customeMiddleware.RequireAuth)
 }
 
 func initializeSessionStore() {
