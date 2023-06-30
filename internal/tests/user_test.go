@@ -14,6 +14,7 @@ import (
 func TestUserRegister(t *testing.T) {
 	// Clear the database
 	Setup()
+
 	// New user and parse it to json
 	user := &handlers.SignupRequest{
 		Username: "fazelsamar",
@@ -58,6 +59,9 @@ func TestUserRegister(t *testing.T) {
 }
 
 func TestUserLoginAndLogout(t *testing.T) {
+	// Clear the database
+	Setup()
+
 	// Create the user
 	user := &handlers.LoginRequest{
 		Username: "fazelsamar2",

@@ -144,6 +144,7 @@ func AutoMigrateDB() error {
 		&model.Payment{},
 		&model.Transaction{},
 		&model.SMSTemplate{},
+		&model.CronJob{},
 	)
 
 	// sqlDB, err := conn.DB()
