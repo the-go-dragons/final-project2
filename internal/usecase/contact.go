@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"errors"
 	"time"
 
 	"github.com/the-go-dragons/final-project2/internal/domain"
@@ -8,17 +9,23 @@ import (
 )
 
 type ContactService struct {
-	phonebookRepo persistence.PhoneBookRepository
-	contactRepo   persistence.ContactRepository
+	phonebookRepo    persistence.PhoneBookRepository
+	contactRepo      persistence.ContactRepository
+	numberRepo       persistence.NumberRepository
+	subscriptionRepo persistence.SubscriptionRepository
 }
 
 func NewContact(
 	phonebookRepo persistence.PhoneBookRepository,
 	contactRepo persistence.ContactRepository,
+	numberRepo persistence.NumberRepository,
+	subscriptionRepo persistence.SubscriptionRepository,
 ) ContactService {
 	return ContactService{
-		phonebookRepo: phonebookRepo,
-		contactRepo:   contactRepo,
+		phonebookRepo:    phonebookRepo,
+		contactRepo:      contactRepo,
+		numberRepo:       numberRepo,
+		subscriptionRepo: subscriptionRepo,
 	}
 }
 
@@ -83,4 +90,54 @@ func (n ContactService) GetByPhoneBook(phoneBookId uint) ([]domain.Contact, erro
 		return make([]domain.Contact, 0), err
 	}
 	return n.contactRepo.GetByPhoneBook(&phoneBook)
+}
+
+func (n ContactService) CreateSmsContact(senderNumber string, receiverNumber string) error {
+	number, err := n.numberRepo.GetByPhone(senderNumber)
+	if err != nil {
+		return err
+	}
+	if number.ID == 0 {
+		return errors.New("there is no such a number!")
+	}
+	subscription, err := n.subscriptionRepo.GetByNumber(number)
+	if err != nil {
+		return err
+	}
+	if subscription.ID == 0 || subscription.UserID == 0 {
+		return errors.New("this number is assigned to any subscription")
+	}
+	phoneBooks, err := n.phonebookRepo.GetByUser(&subscription.User)
+	if err != nil {
+		return err
+	}
+	if len(phoneBooks) == 0 {
+		return errors.New("this user has no phonebook")
+	}
+
+	phonebookIds := make([]uint, len(phoneBooks))
+	for i, phonebook := range phoneBooks {
+		phonebookIds[i] = phonebook.ID
+	}
+	contacts, err := n.contactRepo.GetByPhoneBookIdIn(phonebookIds)
+	if err != nil {
+		return err
+	}
+	if len(contacts) == 0 {
+		now := time.Now()
+		newContact := domain.Contact{
+			Phone:       receiverNumber,
+			PhoneBook:   phoneBooks[0],
+			PhoneBookId: phoneBooks[0].ID,
+			CreatedAt:   now,
+			UpdatedAt:   now,
+			Username:    receiverNumber,
+		}
+
+		_, err := n.contactRepo.Create(newContact)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
