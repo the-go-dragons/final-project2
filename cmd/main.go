@@ -1,11 +1,12 @@
 package main
 
 import (
-	"log"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/the-go-dragons/final-project2/internal/app"
 	"github.com/the-go-dragons/final-project2/pkg/config"
 	"github.com/the-go-dragons/final-project2/pkg/database"
+	"github.com/the-go-dragons/final-project2/pkg/rabbitmq"
 )
 
 func main() {
@@ -15,5 +16,7 @@ func main() {
 	database.AutoMigrateDB()
 	app := app.NewApp()
 	// seeder.Run()
+	rabbitmq.Connect()
+	// cronjob.NewCronJobRunner()
 	log.Fatalln(app.Start(config.Config.Server.Port))
 }

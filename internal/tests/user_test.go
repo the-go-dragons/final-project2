@@ -6,20 +6,15 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 
 	handlers "github.com/the-go-dragons/final-project2/internal/interfaces/http"
 )
 
-func TestMain(m *testing.M) {
-	Setup()
-	code := m.Run()
-	CleanUp()
-	os.Exit(code)
-}
-
 func TestUserRegister(t *testing.T) {
+	// Clear the database
+	Setup()
+
 	// New user and parse it to json
 	user := &handlers.SignupRequest{
 		Username: "fazelsamar",
@@ -64,6 +59,9 @@ func TestUserRegister(t *testing.T) {
 }
 
 func TestUserLoginAndLogout(t *testing.T) {
+	// Clear the database
+	Setup()
+
 	// Create the user
 	user := &handlers.LoginRequest{
 		Username: "fazelsamar2",

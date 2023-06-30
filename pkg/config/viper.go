@@ -81,6 +81,9 @@ type Configuration struct {
 		ImageLogo      string
 		TicketFileName string
 	}
+	Ribbitmq struct {
+		Url string
+	}
 }
 
 func loadConfiguration(configPath, configName, ConfigType string) (*Configuration, error) {

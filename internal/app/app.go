@@ -46,6 +46,7 @@ func routing(e *echo.Echo) {
 	e.Use(middleware.Recover())
 	e.Use(middleware.Secure())
 	e.Use(SessionMiddleware())
+
 	walletRepo := persistence.NewWalletRepository()
 	subscrptionRepo := persistence.NewSubscriptionRepository()
 
@@ -77,6 +78,10 @@ func routing(e *echo.Echo) {
 	smsService := usecase.NewSmsService(smsRepository, *userRepo, phonebookRepo, numberRepo, subscrptionRepo, contactRepo)
 	smsHandler := handlers.NewSmsHandler(smsService, contactService)
 
+	smsTemplateRepo := persistence.NewSmsTemplateRepository()
+	smsTemplateUsecase := usecase.NewSmsTemplateUsecase(smsTemplateRepo)
+	smsTemplateHandler := handlers.NewSmsTemplateHandler(smsTemplateUsecase)
+
 	// TODO: add /users route prefix
 	e.POST("/signup", userHandler.Signup)
 	e.POST("/login", userHandler.Login)
@@ -105,6 +110,8 @@ func routing(e *echo.Echo) {
 
 	e.POST("/sms", smsHandler.SendSMS, customeMiddleware.RequireAuth)
 	e.POST("/sms/username", smsHandler.SendSMSByUsername, customeMiddleware.RequireAuth)
+
+	e.POST("/templates/new", smsTemplateHandler.NewSmsTemplate, customeMiddleware.RequireAuth)
 }
 
 func initializeSessionStore() {

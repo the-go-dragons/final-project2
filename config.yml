@@ -3,9 +3,9 @@ server:
 database:
   test: testsmsproject
   name: smsproject
-  user: postgres
-  password: 1236
-  host: localhost
+  user: admin
+  password: admin
+  host: postgres
   port: 54321
   ssl: disable
   timezone: Asia/Tehran
@@ -37,3 +37,6 @@ app:
   debugMode: true
   imageLogo: img/go-dragon.png
   ticketFileName: pdf/ticket.pdf
+
+ribbitmq:
+  url: amqp://guest:guest@message-broker:5672

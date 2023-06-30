@@ -32,9 +32,10 @@ func init() {
 
 func Setup() {
 	var err error
-	// config.LoadTestEnvVariables()
+
 	config.Load()
 	database.Load()
+
 	// Open a connection to the test database
 	testConStr := fmt.Sprintf("postgresql://%s:%s@%s:%d/%s?sslmode=%s",
 		config.Config.Database.User,

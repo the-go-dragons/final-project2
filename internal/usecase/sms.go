@@ -2,9 +2,11 @@ package usecase
 
 import (
 	"errors"
+	"time"
+
 	"github.com/the-go-dragons/final-project2/internal/domain"
 	"github.com/the-go-dragons/final-project2/internal/interfaces/persistence"
-	"time"
+	"github.com/the-go-dragons/final-project2/pkg/rabbitmq"
 )
 
 type SmsService interface {
@@ -98,7 +100,13 @@ func (s SmsServiceImpl) SendSingle(smsDto SMSHistoryDto) error {
 		return err
 	}
 
-	//TODO: call mock api for sending sms if needed.
+	// Call the rabbitmq to queue the sms
+	smsBody := rabbitmq.SMSBody{
+		Sender:    newSmsHistoryRecord.SenderNumber,
+		Receivers: newSmsHistoryRecord.ReceiverNumbers,
+		Massage:   newSmsHistoryRecord.Content,
+	}
+	rabbitmq.NewMassage(smsBody)
 
 	return nil
 }
@@ -154,7 +162,13 @@ func (s SmsServiceImpl) SendSingleByUsername(smsDto SMSHistoryDto) (string, erro
 		return receiverNumber, err
 	}
 
-	//TODO: call mock api for sending sms if needed.
+	// Call the rabbitmq to queue the sms
+	smsBody := rabbitmq.SMSBody{
+		Sender:    newSmsHistoryRecord.SenderNumber,
+		Receivers: newSmsHistoryRecord.ReceiverNumbers,
+		Massage:   newSmsHistoryRecord.Content,
+	}
+	rabbitmq.NewMassage(smsBody)
 
 	return receiverNumber, nil
 }
