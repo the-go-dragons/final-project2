@@ -11,7 +11,6 @@ require (
 	github.com/labstack/gommon v0.4.0
 	github.com/lib/pq v1.10.2
 	github.com/robfig/cron/v3 v3.0.1
-	github.com/sirupsen/logrus v1.9.2
 	github.com/spf13/viper v1.16.0
 	github.com/streadway/amqp v1.1.0
 	golang.org/x/crypto v0.9.0
