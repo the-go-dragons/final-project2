@@ -3,6 +3,7 @@ package http
 import (
 	"fmt"
 	"github.com/labstack/echo/v4"
+	"github.com/the-go-dragons/final-project2/internal/domain"
 	"github.com/the-go-dragons/final-project2/internal/usecase"
 	"net/http"
 	"strconv"
@@ -27,9 +28,11 @@ func (n PhoneBookHandler) Create(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, Response{Message: "Invalid name"})
 	}
 
-	if req.UserID == 0 {
-		return c.JSON(http.StatusBadRequest, Response{Message: "Invalid userId"})
+	user := c.Get("user").(domain.User)
+	if user.ID == 0 || user.Username == "" {
+		return c.JSON(http.StatusBadRequest, Error{Message: "login first"})
 	}
+	req.UserID = user.ID
 
 	dto := usecase.PhoneBookDto{
 		Name:        req.Name,
@@ -57,9 +60,11 @@ func (n PhoneBookHandler) Edit(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, Response{Message: "Invalid name"})
 	}
 
-	if req.UserID == 0 {
-		return c.JSON(http.StatusBadRequest, Response{Message: "Invalid userId"})
+	user := c.Get("user").(domain.User)
+	if user.ID == 0 || user.Username == "" {
+		return c.JSON(http.StatusBadRequest, Error{Message: "login first"})
 	}
+	req.UserID = user.ID
 
 	if req.ID == 0 {
 		return c.JSON(http.StatusBadRequest, Response{Message: "Invalid Id"})
@@ -82,10 +87,11 @@ func (n PhoneBookHandler) Edit(c echo.Context) error {
 }
 
 func (n PhoneBookHandler) GetByUserName(c echo.Context) error {
-	username := c.QueryParam("username")
-	if username == "" {
-		return c.JSON(http.StatusBadRequest, Error{Message: "Invalid username"})
+	user := c.Get("user").(domain.User)
+	if user.ID == 0 || user.Username == "" {
+		return c.JSON(http.StatusBadRequest, Error{Message: "login first"})
 	}
+	username := user.Username
 
 	phonebookList, err := n.phonebookService.GetByUserName(username)
 	if err != nil {
