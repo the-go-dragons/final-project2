@@ -7,6 +7,8 @@ WORKDIR /app
 COPY ./go.mod .
 COPY ./go.sum .
 
+# ENV GOPROXY=direct
+
 RUN go mod download
 
 COPY . .

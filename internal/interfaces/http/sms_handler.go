@@ -2,11 +2,12 @@ package http
 
 import (
 	"fmt"
+	"net/http"
+	"strings"
+
 	"github.com/asaskevich/govalidator"
 	"github.com/labstack/echo/v4"
 	"github.com/the-go-dragons/final-project2/internal/usecase"
-	"net/http"
-	"strings"
 )
 
 type SmsHandler struct {
@@ -45,7 +46,7 @@ func (s SmsHandler) SendSMS(c echo.Context) error {
 	err = s.smsService.SendSingle(req)
 	if err != nil {
 		fmt.Printf("err: %v\n", err)
-		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't send sms"})
+		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't send sms " + err.Error()})
 	}
 
 	err = s.contactService.CreateSmsContact(req.SenderNumber, req.ReceiverNumbers)

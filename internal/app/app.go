@@ -46,6 +46,7 @@ func routing(e *echo.Echo) {
 	e.Use(middleware.Recover())
 	e.Use(middleware.Secure())
 	e.Use(SessionMiddleware())
+
 	walletRepo := persistence.NewWalletRepository()
 	subscrptionRepo := persistence.NewSubscriptionRepository()
 
@@ -60,10 +61,6 @@ func routing(e *echo.Echo) {
 	trxRepo := persistence.NewTransactionRepository()
 	walletService := usecase.NewWallet(walletRepo, paymentRepo, trxRepo)
 	walletHandler := handlers.NewWalletHandler(walletService)
-
-	smsTemplateRepo := persistence.NewSmsTemplateRepository()
-	smsTemplateUsecase := usecase.NewSmsTemplateUsecase(smsTemplateRepo)
-	smsTemplateHandler := handlers.NewSmsTemplateHandler(smsTemplateUsecase)
 
 	numberRepo := persistence.NewNumberRepository()
 	numberService := usecase.NewNumber(numberRepo, walletRepo, subscrptionRepo)
@@ -81,6 +78,10 @@ func routing(e *echo.Echo) {
 	smsService := usecase.NewSmsService(smsRepository, *userRepo, phonebookRepo, numberRepo, subscrptionRepo)
 	smsHandler := handlers.NewSmsHandler(smsService, contactService)
 
+	smsTemplateRepo := persistence.NewSmsTemplateRepository()
+	smsTemplateUsecase := usecase.NewSmsTemplateUsecase(smsTemplateRepo)
+	smsTemplateHandler := handlers.NewSmsTemplateHandler(smsTemplateUsecase)
+
 	// TODO: add /users route prefix
 	e.POST("/signup", userHandler.Signup)
 	e.POST("/login", userHandler.Login)
@@ -91,7 +92,6 @@ func routing(e *echo.Echo) {
 
 	e.POST("/wallets/charge-request", walletHandler.CharageRequest)
 	e.POST("/wallets/finalize-charge", walletHandler.FinalizeCharge)
-	e.POST("/new-templates/new", smsTemplateHandler.NewSmsTemplate, customeMiddleware.RequireAuth)
 
 	e.PUT("/numbers", numberHandler.Create)
 	e.POST("/numbers/buy-rent", numberHandler.BuyOrRent, customeMiddleware.RequireAuth)
@@ -109,6 +109,8 @@ func routing(e *echo.Echo) {
 	e.DELETE("/contact", contactHandler.Delete)
 
 	e.POST("/sms", smsHandler.SendSMS)
+
+	e.POST("/templates/new", smsTemplateHandler.NewSmsTemplate, customeMiddleware.RequireAuth)
 }
 
 func initializeSessionStore() {

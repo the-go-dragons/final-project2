@@ -42,13 +42,13 @@ func AddNewJob(
 		RepeatationCount: repeatationCount,
 		Massage:          massage,
 		SenderNumber:     senderNumber,
-		ReceiverNumbers:  receiverNumbers,
+		// ReceiverNumbers:  receiverNumbers,
 	})
 	entryID, err := CronJobRunnser.AddFunc(period, func() {
 		rabbitmq.NewMassage(rabbitmq.SMSBody{
-			Sender:    senderNumber,
-			Receivers: receiverNumbers,
-			Massage:   massage,
+			Sender: senderNumber,
+			// Receivers: receiverNumbers,
+			Massage: massage,
 		})
 		// TODO
 		// db, _ := database.GetDatabaseConnection()

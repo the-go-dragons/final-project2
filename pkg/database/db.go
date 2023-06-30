@@ -152,6 +152,8 @@ func AutoMigrateDB() error {
 		&model.Payment{},
 		&model.Transaction{},
 		&model.SMSTemplate{},
+		&model.PhoneBook{},
+		&model.SMSHistory{},
 		&model.CronJob{},
 	)
 
