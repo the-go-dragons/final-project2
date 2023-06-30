@@ -12,6 +12,7 @@ type ContactRepository interface {
 	Delete(id uint) error
 	GetAll() ([]domain.Contact, error)
 	GetByPhoneBook(phoneBook *domain.PhoneBook) ([]domain.Contact, error)
+	GetByPhoneBookIdIn(phonebookIds []uint) ([]domain.Contact, error)
 }
 
 type ContactRepositoryImpl struct {
@@ -100,6 +101,19 @@ func (cr ContactRepositoryImpl) GetByPhoneBook(phoneBook *domain.PhoneBook) ([]d
 	db, _ := database.GetDatabaseConnection()
 
 	tx := db.Debug().Where("PhoneBook = ?", phoneBook).Find(&contacts)
+
+	if err := tx.Error; err != nil {
+		return contacts, err
+	}
+
+	return contacts, nil
+}
+
+func (cr ContactRepositoryImpl) GetByPhoneBookIdIn(phonebookIds []uint) ([]domain.Contact, error) {
+	var contacts []domain.Contact
+	db, _ := database.GetDatabaseConnection()
+
+	tx := db.Debug().Where("PhoneBook in ?", phonebookIds).Find(&contacts)
 
 	if err := tx.Error; err != nil {
 		return contacts, err
