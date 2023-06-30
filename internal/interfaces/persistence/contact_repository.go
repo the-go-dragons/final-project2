@@ -13,6 +13,7 @@ type ContactRepository interface {
 	GetAll() ([]domain.Contact, error)
 	GetByPhoneBook(phoneBook *domain.PhoneBook) ([]domain.Contact, error)
 	GetByPhoneBookIdIn(phonebookIds []uint) ([]domain.Contact, error)
+	GetByUsername(username string) (domain.Contact, error)
 }
 
 type ContactRepositoryImpl struct {
@@ -120,4 +121,17 @@ func (cr ContactRepositoryImpl) GetByPhoneBookIdIn(phonebookIds []uint) ([]domai
 	}
 
 	return contacts, nil
+}
+
+func (cr ContactRepositoryImpl) GetByUsername(username string) (domain.Contact, error) {
+	var contact domain.Contact
+	db, _ := database.GetDatabaseConnection()
+
+	tx := db.Debug().Where("username = ?", username).Find(&contact)
+
+	if err := tx.Error; err != nil {
+		return contact, err
+	}
+
+	return contact, nil
 }
