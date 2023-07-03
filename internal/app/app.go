@@ -82,6 +82,8 @@ func routing(e *echo.Echo) {
 	smsTemplateUsecase := usecase.NewSmsTemplateUsecase(smsTemplateRepo)
 	smsTemplateHandler := handlers.NewSmsTemplateHandler(smsTemplateUsecase)
 
+	adminHandler := handlers.NewAdminHandler(userUsecase)
+
 	// TODO: add /users route prefix
 	e.POST("/signup", userHandler.Signup)
 	e.POST("/login", userHandler.Login)
@@ -112,6 +114,8 @@ func routing(e *echo.Echo) {
 	e.POST("/sms/username", smsHandler.SendSMSByUsername, customeMiddleware.RequireAuth)
 
 	e.POST("/templates/new", smsTemplateHandler.NewSmsTemplate, customeMiddleware.RequireAuth)
+
+	e.GET("/admin/disable-user/:userId", adminHandler.DisableUser, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
 }
 
 func initializeSessionStore() {

@@ -9,13 +9,13 @@ import (
 )
 
 type UserUsecase struct {
-	userRepository *persistence.UserRepository
+	userRepository   *persistence.UserRepository
 	walletRepository persistence.WalletRepository
 }
 
 func NewUserUsecase(repository *persistence.UserRepository, walletRepository persistence.WalletRepository) *UserUsecase {
 	return &UserUsecase{
-		userRepository: repository,
+		userRepository:   repository,
 		walletRepository: walletRepository,
 	}
 }
@@ -34,7 +34,7 @@ func (uu *UserUsecase) CreateUser(user *domain.User) (*domain.User, error) {
 	user.IsActive = true
 	user.IsAdmin = false
 	user.IsLoginRequired = true
-	
+
 	createdUser, err := uu.userRepository.Create(user)
 
 	if err != nil {
@@ -42,7 +42,7 @@ func (uu *UserUsecase) CreateUser(user *domain.User) (*domain.User, error) {
 	}
 
 	wallet := domain.Wallet{
-		UserID: createdUser.ID,
+		UserID:  createdUser.ID,
 		Balance: 0,
 	}
 
@@ -63,6 +63,6 @@ func (uu *UserUsecase) GetUserByUsername(username string) (*domain.User, error) 
 	return uu.userRepository.GeByUsername(username)
 }
 
-func (uu *UserUsecase) UpdateById(id uint, newUser *domain.User) (*domain.User, error) {
-	return uu.userRepository.UpdateById(id, newUser)
+func (uu *UserUsecase) Update(newUser *domain.User) (*domain.User, error) {
+	return uu.userRepository.Update(newUser)
 }
