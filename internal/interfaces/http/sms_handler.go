@@ -14,11 +14,13 @@ import (
 type SmsHandler struct {
 	smsService     *usecase.SmsServiceImpl
 	contactService *usecase.ContactService
+	wordService    *usecase.InappropriateWordService
 }
 
 func NewSmsHandler(smsService usecase.SmsServiceImpl,
-	contactService usecase.ContactService) SmsHandler {
-	return SmsHandler{smsService: &smsService, contactService: &contactService}
+	contactService usecase.ContactService,
+	wordService *usecase.InappropriateWordService) SmsHandler {
+	return SmsHandler{smsService: &smsService, contactService: &contactService, wordService: wordService}
 }
 
 func (s SmsHandler) SendSMS(c echo.Context) error {
@@ -49,6 +51,11 @@ func (s SmsHandler) SendSMS(c echo.Context) error {
 
 	if len(strings.Trim(req.Content, " ")) == 0 {
 		return c.JSON(http.StatusBadRequest, Response{Message: "Invalid content"})
+	}
+
+	err = s.wordService.CheckInappropriateWordsWithRegex(req.Content)
+	if err != nil {
+		return err
 	}
 
 	err = s.smsService.SendSingle(req)
@@ -89,6 +96,11 @@ func (s SmsHandler) SendSMSByUsername(c echo.Context) error {
 
 	if len(strings.Trim(req.Content, " ")) == 0 {
 		return c.JSON(http.StatusBadRequest, Response{Message: "Invalid content"})
+	}
+
+	err = s.wordService.CheckInappropriateWordsWithRegex(req.Content)
+	if err != nil {
+		return err
 	}
 
 	receiverNumber, err := s.smsService.SendSingleByUsername(req)

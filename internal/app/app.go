@@ -74,19 +74,19 @@ func routing(e *echo.Echo) {
 	contactService := usecase.NewContact(phonebookRepo, contactRepo, numberRepo, subscrptionRepo)
 	contactHandler := handlers.NewContactHandler(contactService)
 
+	wordRepo := persistence.NewInappropriateWordRepository()
+	wordService := usecase.NewInappropriateWord(wordRepo)
+	wordHandler := handlers.NewInappropriateWordHandler(wordService)
+
 	smsRepository := persistence.NewSmsHistoryRepository()
 	smsService := usecase.NewSmsService(smsRepository, *userRepo, phonebookRepo, numberRepo, subscrptionRepo, contactRepo)
-	smsHandler := handlers.NewSmsHandler(smsService, contactService)
+	smsHandler := handlers.NewSmsHandler(smsService, contactService, &wordService)
 
 	smsTemplateRepo := persistence.NewSmsTemplateRepository()
 	smsTemplateUsecase := usecase.NewSmsTemplateUsecase(smsTemplateRepo)
 	smsTemplateHandler := handlers.NewSmsTemplateHandler(smsTemplateUsecase)
 
 	adminHandler := handlers.NewAdminHandler(userUsecase)
-
-	wordRepo := persistence.NewInappropriateWordRepository()
-	wordService := usecase.NewInappropriateWord(wordRepo)
-	wordHandler := handlers.NewInappropriateWordHandler(wordService)
 
 	// TODO: add /users route prefix
 	e.POST("/signup", userHandler.Signup)
