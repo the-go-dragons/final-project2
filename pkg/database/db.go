@@ -147,14 +147,16 @@ func AutoMigrateDB() error {
 	}
 
 	err = conn.AutoMigrate(
+		&model.Number{},
 		&model.User{},
 		&model.Wallet{},
 		&model.Payment{},
 		&model.Transaction{},
+		&model.Subscription{},
 		&model.SMSTemplate{},
 		&model.PhoneBook{},
 		&model.SMSHistory{},
-		&model.CronJob{},
+		&model.Contact{},
 	)
 
 	// sqlDB, err := conn.DB()

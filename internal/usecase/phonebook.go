@@ -29,7 +29,6 @@ type PhoneBookDto struct {
 }
 
 func (n PhoneBookService) Create(dto PhoneBookDto) (domain.PhoneBook, error) {
-	now := time.Now()
 	user, err := n.userRepo.GetById(dto.UserID)
 	if err != nil {
 		return domain.PhoneBook{}, err
@@ -39,8 +38,6 @@ func (n PhoneBookService) Create(dto PhoneBookDto) (domain.PhoneBook, error) {
 		User:        *user,
 		Name:        dto.Name,
 		Description: dto.Description,
-		CreatedAt:   now,
-		UpdatedAt:   now,
 	}
 
 	return n.phonebookRepo.Create(phonebookRecord)
@@ -68,12 +65,11 @@ func (n PhoneBookService) Edit(dto PhoneBookDto) (domain.PhoneBook, error) {
 		return domain.PhoneBook{}, err
 	}
 	phonebookRecord := domain.PhoneBook{
-		ID:          dto.ID,
+		// ID:          dto.ID,
 		UserID:      dto.UserID,
 		Name:        dto.Name,
 		User:        *user,
 		Description: dto.Description,
-		UpdatedAt:   time.Now(),
 	}
 
 	return n.phonebookRepo.Update(phonebookRecord)

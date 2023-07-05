@@ -65,7 +65,7 @@ func (a NumberRepositoryImpl) GetByPhone(phone string) (domain.Number, error) {
 	var number domain.Number
 	db, _ := database.GetDatabaseConnection()
 
-	tx := db.Debug().Where("Phone = ?", phone).Find(&number)
+	tx := db.Debug().Where("phone = ?", phone).Find(&number)
 
 	if err := tx.Error; err != nil {
 		return domain.Number{}, err

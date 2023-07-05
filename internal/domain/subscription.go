@@ -8,14 +8,10 @@ import (
 
 type Subscription struct {
 	gorm.Model
-
-	ID             uint      `json:"id"`
-	UserID         uint      `json:"userId"`
-	User           User      `json:"user"`
-	NumberId       uint      `json:"numberId"`
-	Number         Number    `json:"number"`
-	Type           NumberTypeEnum  `json:"type" gorm:"default:1"`
-	ExpirationDate time.Time `json:"expirationDate"`
-	CreatedAt      time.Time `json:"createdAt"`
-	UpdatedAt      time.Time `json:"updatedAt"`
-} 
+	UserID         uint           `json:"userId"`
+	User           User           `json:"user"`
+	NumberId       uint           `json:"numberId"`
+	Number         Number         `json:"number"`
+	Type           NumberTypeEnum `json:"type" gorm:"default:1"`
+	ExpirationDate time.Time      `json:"expirationDate"`
+}

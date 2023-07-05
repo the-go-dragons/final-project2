@@ -3,7 +3,6 @@ package persistence
 import (
 	"github.com/the-go-dragons/final-project2/internal/domain"
 	"github.com/the-go-dragons/final-project2/pkg/database"
-	"time"
 )
 
 type SubscriptionRepository interface {
@@ -36,7 +35,7 @@ func (n SubscriptionRepositoryImpl) GetAll() ([]domain.Subscription, error) {
 
 	var subscriptions []domain.Subscription
 
-	tx := db.Find(&subscriptions)
+	tx := db.Preload("User").Preload("Number").Find(&subscriptions)
 
 	if tx.Error != nil {
 		return nil, tx.Error
@@ -49,7 +48,7 @@ func (a SubscriptionRepositoryImpl) GetByUserId(id uint) (domain.Subscription, e
 	var wallet domain.Subscription
 	db, _ := database.GetDatabaseConnection()
 
-	tx := db.Where("user_id = ?", id).First(&wallet)
+	tx := db.Preload("User").Preload("Number").Where("user_id = ?", id).First(&wallet)
 
 	if err := tx.Error; err != nil {
 		return wallet, err
@@ -62,8 +61,8 @@ func (a SubscriptionRepositoryImpl) GetByNumber(number domain.Number) (domain.Su
 	var subscription domain.Subscription
 	db, _ := database.GetDatabaseConnection()
 
-	tx := db.Where("number_id = ?", number.ID).
-		Where("expiration_date > ", time.Now()).
+	tx := db.Preload("User").Preload("Number").Where("number_id = ?", number.ID).
+		// Where("expiration_date > ", time.Now()).
 		First(&subscription)
 
 	if err := tx.Error; err != nil {

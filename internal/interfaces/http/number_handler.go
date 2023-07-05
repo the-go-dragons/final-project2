@@ -40,13 +40,13 @@ func (n NumberHandler) Create(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, Response{Message: "Invalid number type"})
 	}
 
-	if !govalidator.IsInt(fmt.Sprintf("%d" , req.Price)) || req.Price ==0 {
+	if !govalidator.IsInt(fmt.Sprintf("%d", req.Price)) || req.Price == 0 {
 		return c.JSON(http.StatusBadRequest, Response{Message: "Invalid price"})
 	}
 
 	payload := usecase.NewNumberPayload{
 		Phone: req.Phone,
-		Type: req.Type,
+		Type:  req.Type,
 		Price: req.Price,
 	}
 
@@ -55,7 +55,7 @@ func (n NumberHandler) Create(c echo.Context) error {
 		fmt.Printf("err: %v\n", err)
 		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't create number"})
 	}
-	
+
 	return c.JSON(http.StatusOK, Response{Message: "Created"})
 }
 
@@ -99,7 +99,7 @@ func (n NumberHandler) BuyOrRent(c echo.Context) error {
 	} else {
 		totalPrice = number.Price * uint32(req.Months)
 		expirationDate = time.Now().AddDate(0, int(req.Months), 0)
-    }
+	}
 
 	user := c.Get("user").(domain.User)
 
@@ -121,6 +121,6 @@ func (n NumberHandler) BuyOrRent(c echo.Context) error {
 		fmt.Printf("err: %v\n", err)
 		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't create user"})
 	}
-	
+
 	return c.JSON(http.StatusOK, Response{Message: "Created"})
 }

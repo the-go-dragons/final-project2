@@ -8,8 +8,8 @@ import (
 )
 
 type NumberService struct {
-	numberRepo  persistence.NumberRepository
-	walletRepo persistence.WalletRepository
+	numberRepo       persistence.NumberRepository
+	walletRepo       persistence.WalletRepository
 	subscriptionRepo persistence.SubscriptionRepository
 }
 
@@ -19,27 +19,24 @@ func NewNumber(
 	subscriptionRepo persistence.SubscriptionRepository,
 ) NumberService {
 	return NumberService{
-		numberRepo: numberRepo,
-		walletRepo: walletRepo,
+		numberRepo:       numberRepo,
+		walletRepo:       walletRepo,
 		subscriptionRepo: subscriptionRepo,
 	}
 }
 
 type NewNumberPayload struct {
-	Phone       string                `json:"phone"`
-	Price       uint32                `json:"price"`
-    Type        domain.NumberTypeEnum `json:"type" `
+	Phone string                `json:"phone"`
+	Price uint32                `json:"price"`
+	Type  domain.NumberTypeEnum `json:"type" `
 }
 
 func (n NumberService) Create(number NewNumberPayload) (domain.Number, error) {
-	now := time.Now()
 	numberRecord := domain.Number{
-		Phone: number.Phone,
-		Type: number.Type,
-		Price: number.Price,
+		Phone:       number.Phone,
+		Type:        number.Type,
+		Price:       number.Price,
 		IsAvailable: true,
-		CreatedAt:  now,
-		UpdatedAt: now,
 	}
 
 	return n.numberRepo.Create(numberRecord)
@@ -54,20 +51,20 @@ func (n NumberService) BuyOrRentNumber(number domain.Number, user domain.User, w
 	_, err := n.walletRepo.Update(wallet)
 
 	if err != nil {
-		return false , err
+		return false, err
 	}
 
 	subscription := domain.Subscription{
-		UserID: user.ID,
-		NumberId: number.ID,
-		Type: number.Type,
+		UserID:         user.ID,
+		NumberId:       number.ID,
+		Type:           number.Type,
 		ExpirationDate: expirationDate,
 	}
 
 	_, err = n.subscriptionRepo.Create(subscription)
 
 	if err != nil {
-		return false , err
+		return false, err
 	}
 
 	number.IsAvailable = false

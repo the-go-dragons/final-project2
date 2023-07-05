@@ -1,9 +1,6 @@
 package usecase
 
 import (
-	"errors"
-	"time"
-
 	"github.com/the-go-dragons/final-project2/internal/domain"
 	"github.com/the-go-dragons/final-project2/internal/interfaces/persistence"
 )
@@ -29,31 +26,8 @@ func NewContact(
 	}
 }
 
-type ContactDto struct {
-	ID          uint      `json:"id"`
-	Username    string    `json:"username"`
-	Phone       string    `json:"phone"`
-	PhoneBookId uint      `json:"phoneBookId"`
-	CreatedAt   time.Time `json:"createdAt"`
-	UpdatedAt   time.Time `json:"updatedAt"`
-}
-
-func (n ContactService) Create(dto ContactDto) (domain.Contact, error) {
-	now := time.Now()
-	phonebook, err := n.phonebookRepo.Get(dto.PhoneBookId)
-	if err != nil {
-		return domain.Contact{}, err
-	}
-	contactRecord := domain.Contact{
-		PhoneBookId: dto.PhoneBookId,
-		PhoneBook:   phonebook,
-		Username:    dto.Username,
-		Phone:       dto.Phone,
-		CreatedAt:   now,
-		UpdatedAt:   now,
-	}
-
-	return n.contactRepo.Create(contactRecord)
+func (n ContactService) Create(contact domain.Contact) (domain.Contact, error) {
+	return n.contactRepo.Create(contact)
 }
 
 func (n ContactService) GetById(Id uint) (domain.Contact, error) {
@@ -64,20 +38,8 @@ func (n ContactService) GetAll() ([]domain.Contact, error) {
 	return n.contactRepo.GetAll()
 }
 
-func (n ContactService) Edit(dto ContactDto) (domain.Contact, error) {
-	phonebook, err := n.phonebookRepo.Get(dto.PhoneBookId)
-	if err != nil {
-		return domain.Contact{}, err
-	}
-	phonebookRecord := domain.Contact{
-		ID:        dto.ID,
-		PhoneBook: phonebook,
-		Username:  dto.Username,
-		Phone:     dto.Phone,
-		UpdatedAt: time.Now(),
-	}
-
-	return n.contactRepo.Update(phonebookRecord)
+func (n ContactService) Edit(contact domain.Contact) (domain.Contact, error) {
+	return n.contactRepo.Update(contact)
 }
 
 func (n ContactService) Delete(Id uint) error {
@@ -92,52 +54,10 @@ func (n ContactService) GetByPhoneBook(phoneBookId uint) ([]domain.Contact, erro
 	return n.contactRepo.GetByPhoneBook(&phoneBook)
 }
 
-func (n ContactService) CreateSmsContact(senderNumber string, receiverNumber string) error {
-	number, err := n.numberRepo.GetByPhone(senderNumber)
-	if err != nil {
-		return err
-	}
-	if number.ID == 0 {
-		return errors.New("there is no such a number!")
-	}
-	subscription, err := n.subscriptionRepo.GetByNumber(number)
-	if err != nil {
-		return err
-	}
-	if subscription.ID == 0 || subscription.UserID == 0 {
-		return errors.New("this number is assigned to any subscription")
-	}
-	phoneBooks, err := n.phonebookRepo.GetByUser(&subscription.User)
-	if err != nil {
-		return err
-	}
-	if len(phoneBooks) == 0 {
-		return errors.New("this user has no phonebook")
-	}
+func (n ContactService) GetContactByUsername(username string) (domain.Contact, error) {
+	return n.contactRepo.GetByUsername(username)
+}
 
-	phonebookIds := make([]uint, len(phoneBooks))
-	for i, phonebook := range phoneBooks {
-		phonebookIds[i] = phonebook.ID
-	}
-	contacts, err := n.contactRepo.GetByPhoneBookIdIn(phonebookIds)
-	if err != nil {
-		return err
-	}
-	if len(contacts) == 0 {
-		now := time.Now()
-		newContact := domain.Contact{
-			Phone:       receiverNumber,
-			PhoneBook:   phoneBooks[0],
-			PhoneBookId: phoneBooks[0].ID,
-			CreatedAt:   now,
-			UpdatedAt:   now,
-			Username:    receiverNumber,
-		}
-
-		_, err := n.contactRepo.Create(newContact)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+func (n ContactService) GetContactByPhone(phone string) (domain.Contact, error) {
+	return n.contactRepo.GetByPhone(phone)
 }

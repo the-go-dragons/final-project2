@@ -72,47 +72,51 @@ func routing(e *echo.Echo) {
 
 	contactRepo := persistence.NewContactRepository()
 	contactService := usecase.NewContact(phonebookRepo, contactRepo, numberRepo, subscrptionRepo)
-	contactHandler := handlers.NewContactHandler(contactService)
+	contactHandler := handlers.NewContactHandler(contactService, phoneBookService)
 
 	smsRepository := persistence.NewSmsHistoryRepository()
 	smsService := usecase.NewSmsService(smsRepository, *userRepo, phonebookRepo, numberRepo, subscrptionRepo, contactRepo)
-	smsHandler := handlers.NewSmsHandler(smsService, contactService)
+	smsHandler := handlers.NewSmsHandler(smsService, contactService, phoneBookService)
 
 	smsTemplateRepo := persistence.NewSmsTemplateRepository()
 	smsTemplateUsecase := usecase.NewSmsTemplateUsecase(smsTemplateRepo)
-	smsTemplateHandler := handlers.NewSmsTemplateHandler(smsTemplateUsecase)
+	smsTemplateHandler := handlers.NewSmsTemplateHandler(smsTemplateUsecase, smsService, contactService, phoneBookService)
 
 	// TODO: add /users route prefix
 	e.POST("/signup", userHandler.Signup)
 	e.POST("/login", userHandler.Login)
 	e.GET("/logout", userHandler.Logout, customeMiddleware.RequireAuth)
 
-	e.GET("/payments/pay/:paymentId", paymentHandler.Pay)
-	e.POST("/payments/callback", paymentHandler.Callback)
+	e.GET("/payments/pay/:paymentId", paymentHandler.Pay, customeMiddleware.RequireAuth)
+	e.POST("/payments/callback", paymentHandler.Callback, customeMiddleware.RequireAuth)
 
-	e.POST("/wallets/charge-request", walletHandler.CharageRequest)
-	e.POST("/wallets/finalize-charge", walletHandler.FinalizeCharge)
+	e.POST("/wallets/charge-request", walletHandler.CharageRequest, customeMiddleware.RequireAuth)
+	e.POST("/wallets/finalize-charge", walletHandler.FinalizeCharge, customeMiddleware.RequireAuth)
 
-	e.PUT("/numbers", numberHandler.Create)
+	e.PUT("/numbers", numberHandler.Create, customeMiddleware.RequireAuth)
 	e.POST("/numbers/buy-rent", numberHandler.BuyOrRent, customeMiddleware.RequireAuth)
 
-	e.GET("/phonebook", phoneBookHandler.GetAll)
-	e.GET("/phonebook/username", phoneBookHandler.GetByUserName)
-	e.DELETE("/phonebook", phoneBookHandler.Delete)
+	e.GET("/phonebook", phoneBookHandler.GetAll, customeMiddleware.RequireAuth)
+	e.GET("/phonebook/username", phoneBookHandler.GetByUserName, customeMiddleware.RequireAuth)
+	e.DELETE("/phonebook", phoneBookHandler.Delete, customeMiddleware.RequireAuth)
 	e.POST("/phonebook", phoneBookHandler.Create, customeMiddleware.RequireAuth)
 	e.PUT("/phonebook", phoneBookHandler.Edit, customeMiddleware.RequireAuth)
 
-	e.POST("/contact", contactHandler.Create)
-	e.PUT("/contact", contactHandler.Edit)
-	e.GET("/contact", contactHandler.GetAll)
-	e.GET("/contact/phonebook", contactHandler.GetByPhoneBook)
-	e.DELETE("/contact", contactHandler.Delete)
+	e.POST("/contact", contactHandler.Create, customeMiddleware.RequireAuth)
+	e.PUT("/contact", contactHandler.Edit, customeMiddleware.RequireAuth)
+	e.GET("/contact", contactHandler.GetAll, customeMiddleware.RequireAuth)
+	e.GET("/contact/phonebook", contactHandler.GetByPhoneBook, customeMiddleware.RequireAuth)
+	e.DELETE("/contact", contactHandler.Delete, customeMiddleware.RequireAuth)
 
-	e.POST("/sms", smsHandler.SendSMS, customeMiddleware.RequireAuth)
-	e.POST("/sms/username", smsHandler.SendSMSByUsername, customeMiddleware.RequireAuth)
+	e.POST("/sms", smsHandler.SendSingleSMS, customeMiddleware.RequireAuth)
+	e.POST("/sms/periodic", smsHandler.SendSinglePeriodSMS, customeMiddleware.RequireAuth)
+	e.POST("/sms/username", smsHandler.SendSingleSMSByUsername, customeMiddleware.RequireAuth)
+	e.POST("/sms/username/periodic", smsHandler.SendSinglePeriodSMSByUsername, customeMiddleware.RequireAuth)
 
 	e.POST("/templates/new", smsTemplateHandler.NewSmsTemplate, customeMiddleware.RequireAuth)
 	e.GET("/templates", smsTemplateHandler.SmsTemplateList, customeMiddleware.RequireAuth)
+	e.POST("/templates/sms", smsTemplateHandler.NewSingleSmsWithTemplate, customeMiddleware.RequireAuth)
+	e.POST("/templates/sms/username", smsTemplateHandler.NewSingleSmsWithUsernameWithTemplate, customeMiddleware.RequireAuth)
 }
 
 func initializeSessionStore() {

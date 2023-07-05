@@ -12,8 +12,8 @@ type ContactRepository interface {
 	Delete(id uint) error
 	GetAll() ([]domain.Contact, error)
 	GetByPhoneBook(phoneBook *domain.PhoneBook) ([]domain.Contact, error)
-	GetByPhoneBookIdIn(phonebookIds []uint) ([]domain.Contact, error)
 	GetByUsername(username string) (domain.Contact, error)
+	GetByPhone(phone string) (domain.Contact, error)
 }
 
 type ContactRepositoryImpl struct {
@@ -101,20 +101,7 @@ func (cr ContactRepositoryImpl) GetByPhoneBook(phoneBook *domain.PhoneBook) ([]d
 	var contacts []domain.Contact
 	db, _ := database.GetDatabaseConnection()
 
-	tx := db.Debug().Where("PhoneBook = ?", phoneBook).Find(&contacts)
-
-	if err := tx.Error; err != nil {
-		return contacts, err
-	}
-
-	return contacts, nil
-}
-
-func (cr ContactRepositoryImpl) GetByPhoneBookIdIn(phonebookIds []uint) ([]domain.Contact, error) {
-	var contacts []domain.Contact
-	db, _ := database.GetDatabaseConnection()
-
-	tx := db.Debug().Where("PhoneBook in ?", phonebookIds).Find(&contacts)
+	tx := db.Debug().Where("phone_book_id = ?", phoneBook).Find(&contacts)
 
 	if err := tx.Error; err != nil {
 		return contacts, err
@@ -128,6 +115,19 @@ func (cr ContactRepositoryImpl) GetByUsername(username string) (domain.Contact, 
 	db, _ := database.GetDatabaseConnection()
 
 	tx := db.Debug().Where("username = ?", username).Find(&contact)
+
+	if err := tx.Error; err != nil {
+		return contact, err
+	}
+
+	return contact, nil
+}
+
+func (cr ContactRepositoryImpl) GetByPhone(phone string) (domain.Contact, error) {
+	var contact domain.Contact
+	db, _ := database.GetDatabaseConnection()
+
+	tx := db.Debug().Where("phone = ?", phone).Find(&contact)
 
 	if err := tx.Error; err != nil {
 		return contact, err
