@@ -84,6 +84,10 @@ func routing(e *echo.Echo) {
 
 	adminHandler := handlers.NewAdminHandler(userUsecase)
 
+	wordRepo := persistence.NewInappropriateWordRepository()
+	wordService := usecase.NewInappropriateWord(wordRepo)
+	wordHandler := handlers.NewInappropriateWordHandler(wordService)
+
 	// TODO: add /users route prefix
 	e.POST("/signup", userHandler.Signup)
 	e.POST("/login", userHandler.Login)
@@ -116,6 +120,11 @@ func routing(e *echo.Echo) {
 	e.POST("/templates/new", smsTemplateHandler.NewSmsTemplate, customeMiddleware.RequireAuth)
 
 	e.GET("/admin/disable-user/:userId", adminHandler.DisableUser, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
+
+	e.POST("/inappropriate-word", wordHandler.Create, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
+	e.PUT("/inappropriate-word", wordHandler.Edit, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
+	e.GET("/inappropriate-word", wordHandler.GetAll, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
+	e.DELETE("/inappropriate-word", wordHandler.Delete, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
 }
 
 func initializeSessionStore() {
