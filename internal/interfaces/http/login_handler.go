@@ -82,7 +82,7 @@ func (uh *UserHandler) Login(c echo.Context) error {
 
 		// update IsLoginRequired field
 		user.IsLoginRequired = false
-		uh.userUsecase.UpdateById(uint(user.ID), user)
+		uh.userUsecase.Update(user)
 		SetUserToSession(c, user)
 
 		return c.JSON(http.StatusOK, LoginResponse{Message: "You logged in successfully", Token: token})
