@@ -58,10 +58,14 @@ func (s SmsServiceImpl) SingleSMS(smsHistory domain.SMSHistory) error {
 	}
 	rabbitmq.NewMassage(smsBody)
 
-	smsHistory, err := s.smsRepo.Create(smsHistory)
+	smsHistory, err := s.CreateSMS(smsHistory)
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func (s SmsServiceImpl) GetSMSHistoryByUserId(userId uint) ([]domain.SMSHistory, error) {
+	return s.smsRepo.GetByUserId(userId)
 }

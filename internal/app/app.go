@@ -82,7 +82,7 @@ func routing(e *echo.Echo) {
 	smsTemplateUsecase := usecase.NewSmsTemplateUsecase(smsTemplateRepo)
 	smsTemplateHandler := handlers.NewSmsTemplateHandler(smsTemplateUsecase, smsService, contactService, phoneBookService)
 
-	adminHandler := handlers.NewAdminHandler(userUsecase)
+	adminHandler := handlers.NewAdminHandler(userUsecase, &smsService)
 
 	// TODO: add /users route prefix
 	e.POST("/signup", userHandler.Signup)
@@ -123,6 +123,7 @@ func routing(e *echo.Echo) {
 	e.POST("/templates/sms/username/periodic", smsTemplateHandler.NewSinglePeriodSmsWithUsernameWithTemplate, customeMiddleware.RequireAuth)
 
 	e.GET("/admin/disable-user/:userId", adminHandler.DisableUser, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
+	e.GET("/admin/sms-report/:userId", adminHandler.GetSMSHistoryByUserId, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
 }
 
 func initializeSessionStore() {

@@ -11,6 +11,7 @@ type SmsHistoryRepository interface {
 	Get(id uint) (domain.SMSHistory, error)
 	Delete(id uint) error
 	GetAll() ([]domain.SMSHistory, error)
+	GetByUserId(userId uint) ([]domain.SMSHistory, error)
 }
 
 type SmsHistoryRepositoryImpl struct {
@@ -92,4 +93,17 @@ func (shr SmsHistoryRepositoryImpl) GetAll() ([]domain.SMSHistory, error) {
 	}
 
 	return smsHistories, nil
+}
+
+func (shr SmsHistoryRepositoryImpl) GetByUserId(userId uint) ([]domain.SMSHistory, error) {
+	var sms []domain.SMSHistory
+	db, _ := database.GetDatabaseConnection()
+
+	tx := db.Where("user_id = ?", userId).Find(&sms)
+
+	if err := tx.Error; err != nil {
+		return sms, err
+	}
+
+	return sms, nil
 }
