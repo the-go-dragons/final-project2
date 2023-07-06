@@ -8,6 +8,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/the-go-dragons/final-project2/internal/domain"
 	"github.com/the-go-dragons/final-project2/internal/usecase"
+	"github.com/the-go-dragons/final-project2/pkg/cronjob"
 )
 
 type SmsTemplateHandler struct {
@@ -53,6 +54,25 @@ type SingleSmsWithUsernameWithTemplateRequest struct {
 	PhoneBookId      uint   `json:"phoneBookId"`
 	Content          string `json:"content"`
 	TemplateId       uint   `json:"templateId"`
+}
+
+type SinglePeriodSmsWithTemplateRequest struct {
+	SenderNumber     string `json:"senderNumber"`
+	ReceiverNumber   string `json:"receiverNumbers"`
+	Content          string `json:"content"`
+	TemplateId       uint   `json:"templateId"`
+	Period           string `json:"period"`
+	RepeatationCount uint   `json:"repeatationCount"`
+}
+
+type SinglePeriodSmsWithUsernameWithTemplateRequest struct {
+	SenderNumber     string `json:"senderNumber"`
+	ReceiverUsername string `json:"receiverUsername"`
+	PhoneBookId      uint   `json:"phoneBookId"`
+	Content          string `json:"content"`
+	TemplateId       uint   `json:"templateId"`
+	Period           string `json:"period"`
+	RepeatationCount uint   `json:"repeatationCount"`
 }
 
 func (smsh *SmsTemplateHandler) NewSmsTemplate(c echo.Context) error {
@@ -227,6 +247,104 @@ func (smsh *SmsTemplateHandler) NewSingleSmsWithUsernameWithTemplate(c echo.Cont
 		fmt.Printf("err: %v\n", err)
 		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't send sms " + err.Error()})
 	}
+
+	return c.JSON(http.StatusOK, Response{Message: "SMS Sent"})
+}
+
+func (smsh *SmsTemplateHandler) NewSinglePeriodSmsWithTemplate(c echo.Context) error {
+	user := c.Get("user").(domain.User)
+	var request SinglePeriodSmsWithTemplateRequest
+
+	// Check the request body
+	err := c.Bind(&request)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, Response{Message: "Invalid data entry"})
+	}
+	if request.Content == "" || request.ReceiverNumber == "" || request.SenderNumber == "" || request.Period == "" || request.RepeatationCount == 0 {
+		return c.JSON(http.StatusBadRequest, Response{Message: "Missing required fields"})
+	}
+	if ValidateSingleSMSBody(request.SenderNumber, request.ReceiverNumber, request.Content) != nil {
+		return c.JSON(http.StatusBadRequest, Response{Message: err.Error()})
+	}
+
+	// Check the template
+	template, err := smsh.smsTemplateUseCase.GetById(request.TemplateId)
+	if err != nil || template.ID == 0 {
+		return c.JSON(http.StatusBadRequest, Response{Message: "Template not found"})
+	}
+	if template.UserID != user.ID {
+		return c.JSON(http.StatusBadRequest, Response{Message: "The selected template is not for the user"})
+	}
+
+	// Make the content with the template
+	slices := strings.Split(string(request.Content), "%")
+	interfaceSlice := make([]interface{}, len(slices))
+
+	for i, v := range slices {
+		interfaceSlice[i] = v
+	}
+	content := fmt.Sprintf(template.Text, interfaceSlice...)
+
+	// Add new cron job
+	cronjob.AddNewJob(user, request.Period, content, request.SenderNumber, request.ReceiverNumber, request.RepeatationCount, smsh.smsService)
+
+	return c.JSON(http.StatusOK, Response{Message: "SMS Sent"})
+}
+
+func (smsh *SmsTemplateHandler) NewSinglePeriodSmsWithUsernameWithTemplate(c echo.Context) error {
+	user := c.Get("user").(domain.User)
+	var request SinglePeriodSmsWithUsernameWithTemplateRequest
+
+	// Check the request body
+	err := c.Bind(&request)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, Response{Message: "Invalid data entry"})
+	}
+	if request.Content == "" || request.ReceiverUsername == "" || request.SenderNumber == "" || request.PhoneBookId == 0 || request.Period == "" || request.RepeatationCount == 0 {
+		return c.JSON(http.StatusBadRequest, Response{Message: "Missing required fields"})
+	}
+	if CheckTheNumberFormat(request.SenderNumber) != nil {
+		return c.JSON(http.StatusBadRequest, Response{Message: "invalid sender number"})
+	}
+
+	// Check the template
+	template, err := smsh.smsTemplateUseCase.GetById(request.TemplateId)
+	if err != nil || template.ID == 0 {
+		return c.JSON(http.StatusBadRequest, Response{Message: "Template not found"})
+	}
+	if template.UserID != user.ID {
+		return c.JSON(http.StatusBadRequest, Response{Message: "The selected template is not for the user"})
+	}
+
+	// Get the contact
+	contact, err := smsh.contactService.GetContactByUsername(request.ReceiverUsername)
+	if err != nil || contact.ID <= 0 {
+		return c.JSON(http.StatusBadRequest, Response{Message: "contact not found"})
+	}
+
+	// Check the phone book
+	phoneBook, err := smsh.phoneBookService.GetById(request.PhoneBookId)
+	if err != nil || phoneBook.ID <= 0 {
+		return c.JSON(http.StatusBadRequest, Response{Message: "phone book not found"})
+	}
+	if user.ID != phoneBook.UserID {
+		return c.JSON(http.StatusBadRequest, Response{Message: "this phone book is not for user"})
+	}
+	if contact.PhoneBookId != phoneBook.ID {
+		return c.JSON(http.StatusBadRequest, Response{Message: "the contact is not for the given phone book"})
+	}
+
+	// Make the content with the template
+	slices := strings.Split(string(request.Content), "%")
+	interfaceSlice := make([]interface{}, len(slices))
+
+	for i, v := range slices {
+		interfaceSlice[i] = v
+	}
+	content := fmt.Sprintf(template.Text, interfaceSlice...)
+
+	// Add new cron job
+	cronjob.AddNewJob(user, request.Period, content, request.SenderNumber, contact.Phone, request.RepeatationCount, smsh.smsService)
 
 	return c.JSON(http.StatusOK, Response{Message: "SMS Sent"})
 }
