@@ -10,6 +10,7 @@ type NumberRepository interface {
 	Update(input domain.Number) (domain.Number, error)
 	Get(id uint) (domain.Number, error)
 	GetByPhone(phone string) (domain.Number, error)
+	GetDefault() (domain.Number, error)
 }
 
 type NumberRepositoryImpl struct {
@@ -66,6 +67,19 @@ func (a NumberRepositoryImpl) GetByPhone(phone string) (domain.Number, error) {
 	db, _ := database.GetDatabaseConnection()
 
 	tx := db.Debug().Where("Phone = ?", phone).Find(&number)
+
+	if err := tx.Error; err != nil {
+		return domain.Number{}, err
+	}
+
+	return number, nil
+}
+
+func (a NumberRepositoryImpl) GetDefault() (domain.Number, error) {
+	var number domain.Number
+	db, _ := database.GetDatabaseConnection()
+
+	tx := db.Debug().Where("Type = ?", domain.Public).First(&number)
 
 	if err := tx.Error; err != nil {
 		return domain.Number{}, err

@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"errors"
+	"time"
 
 	"github.com/the-go-dragons/final-project2/internal/domain"
 	"github.com/the-go-dragons/final-project2/internal/interfaces/persistence"
@@ -11,12 +12,20 @@ import (
 type UserUsecase struct {
 	userRepository   *persistence.UserRepository
 	walletRepository persistence.WalletRepository
+	numberRepository persistence.NumberRepository
+	subscriptionRepo persistence.SubscriptionRepository
 }
 
-func NewUserUsecase(repository *persistence.UserRepository, walletRepository persistence.WalletRepository) *UserUsecase {
+func NewUserUsecase(repository *persistence.UserRepository,
+	walletRepository persistence.WalletRepository,
+	numberRepository persistence.NumberRepository,
+	subscriptionRepo persistence.SubscriptionRepository,
+) *UserUsecase {
 	return &UserUsecase{
 		userRepository:   repository,
 		walletRepository: walletRepository,
+		numberRepository: numberRepository,
+		subscriptionRepo: subscriptionRepo,
 	}
 }
 
@@ -31,6 +40,10 @@ func (uu *UserUsecase) CreateUser(user *domain.User) (*domain.User, error) {
 	}
 	user.Password = string(encryptedPassword)
 
+	defaultNumber, err := uu.numberRepository.GetDefault()
+	if err == nil {
+		user.DefaultNumberID = &defaultNumber.ID
+	}
 	user.IsActive = true
 	user.IsAdmin = false
 	user.IsLoginRequired = true
@@ -65,4 +78,24 @@ func (uu *UserUsecase) GetUserByUsername(username string) (*domain.User, error) 
 
 func (uu *UserUsecase) Update(newUser *domain.User) (*domain.User, error) {
 	return uu.userRepository.Update(newUser)
+}
+
+func (uu *UserUsecase) UpdateDefaultNumber(userId int, numberId int) (*domain.User, error) {
+	user, err := uu.userRepository.GetById(uint(userId))
+	if err != nil {
+		return nil, UserNotFound{userId}
+	}
+	number, err := uu.numberRepository.Get(uint(numberId))
+	if err != nil {
+		return nil, InvalidNumber{int(numberId)}
+	}
+	if number.Type != domain.Public {
+		sub, err := uu.subscriptionRepo.GetByUserId(uint(userId))
+		if err != nil || time.Now().After(sub.ExpirationDate) {
+			return nil, InvalidNumber{int(numberId)}
+		}
+
+	}
+	user.DefaultNumberID = &number.ID
+	return uu.userRepository.Update(user)
 }

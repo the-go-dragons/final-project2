@@ -50,10 +50,6 @@ func routing(e *echo.Echo) {
 	walletRepo := persistence.NewWalletRepository()
 	subscrptionRepo := persistence.NewSubscriptionRepository()
 
-	userRepo := persistence.NewUserRepository()
-	userUsecase := usecase.NewUserUsecase(userRepo, walletRepo)
-	userHandler := handlers.NewUserHandler(userUsecase)
-
 	paymentRepo := persistence.NewPaymentRepository()
 	paymentService := usecase.NewPayment(paymentRepo)
 	paymentHandler := handlers.NewPaymentHandler(paymentService)
@@ -65,6 +61,10 @@ func routing(e *echo.Echo) {
 	numberRepo := persistence.NewNumberRepository()
 	numberService := usecase.NewNumber(numberRepo, walletRepo, subscrptionRepo)
 	numberHandler := handlers.NewNumberHandler(numberService, walletService)
+
+	userRepo := persistence.NewUserRepository()
+	userUsecase := usecase.NewUserUsecase(userRepo, walletRepo, numberRepo, subscrptionRepo)
+	userHandler := handlers.NewUserHandler(userUsecase)
 
 	phonebookRepo := persistence.NewPhoneBookRepository()
 	phoneBookService := usecase.NewPhoneBook(phonebookRepo, userRepo)
@@ -88,6 +88,7 @@ func routing(e *echo.Echo) {
 	e.POST("/signup", userHandler.Signup)
 	e.POST("/login", userHandler.Login)
 	e.GET("/logout", userHandler.Logout, customeMiddleware.RequireAuth)
+	e.POST("/users/:userId/update-default-number", userHandler.UpdateDefaultNumber)
 
 	e.GET("/payments/pay/:paymentId", paymentHandler.Pay)
 	e.POST("/payments/callback", paymentHandler.Callback)
