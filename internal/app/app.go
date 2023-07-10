@@ -85,7 +85,7 @@ func routing(e *echo.Echo) {
 	priceRepo := persistence.NewPriceRepository()
 	priceUsecase := usecase.NewPriceService(priceRepo)
 
-	adminHandler := handlers.NewAdminHandler(*userUsecase, priceUsecase, &smsService)
+	adminHandler := handlers.NewAdminHandler(*userUsecase, priceUsecase, smsService)
 
 	// TODO: add /users route prefix
 	e.POST("/signup", userHandler.Signup)

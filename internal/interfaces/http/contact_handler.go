@@ -12,18 +12,24 @@ import (
 )
 
 type ContactHandler struct {
-	contactService   *usecase.ContactService
-	phoneBookService *usecase.PhoneBookService
+	contactService   usecase.ContactService
+	phoneBookService usecase.PhoneBookService
 }
 
 type ContactRequest struct {
 	Username    string `json:"username"`
 	Phone       string `json:"phone"`
-	PhoneBookId uint   `json:"phoneBookId"`
+	PhoneBookId uint   `json:"phonebook_id"`
 }
 
-func NewContactHandler(contact usecase.ContactService, phoneBookService usecase.PhoneBookService) ContactHandler {
-	return ContactHandler{contactService: &contact, phoneBookService: &phoneBookService}
+func NewContactHandler(
+	contact usecase.ContactService,
+	phoneBookService usecase.PhoneBookService,
+) ContactHandler {
+	return ContactHandler{
+		contactService:   contact,
+		phoneBookService: phoneBookService,
+	}
 }
 
 func (n ContactHandler) Create(c echo.Context) error {

@@ -52,17 +52,12 @@ func (uh *UserHandler) Login(c echo.Context) error {
 	err := c.Bind(&request)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, Response{Message: "Invalid body request"})
-		// TODO: all Responses should be in a standard
-
-		// TODO: response messages should be mutli language
-		// we can use i18 library
 	}
-
 	if request.Username == "" || request.Password == "" {
 		return c.JSON(http.StatusBadRequest, Response{Message: "Missing required fields"})
 	}
 
-	// Check for dupplication
+	// Check for existence of user
 	user, err = uh.userUsecase.GetUserByUsername(request.Username)
 	if err != nil {
 		return c.JSON(http.StatusConflict, Response{Message: "No user found with this credentials"})
@@ -71,11 +66,11 @@ func (uh *UserHandler) Login(c echo.Context) error {
 	// Check if password is correct
 	equalErr := bcrypt.CompareHashAndPassword(
 		[]byte(user.Password),
-		[]byte(request.Password))
-
+		[]byte(request.Password),
+	)
 	if equalErr == nil {
+		// Generate the token
 		token, err := GenerateToken(user)
-
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, Response{Message: "Server Error"})
 		}

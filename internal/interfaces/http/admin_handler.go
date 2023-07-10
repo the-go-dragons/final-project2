@@ -12,10 +12,14 @@ import (
 type AdminHandler struct {
 	userUsecase  usecase.UserUsecase
 	priceUsecase usecase.PriceService
-	smsService   *usecase.SmsServiceImpl
+	smsService   usecase.SmsServiceImpl
 }
 
-func NewAdminHandler(userUsecase usecase.UserUsecase, priceUsecase usecase.PriceService, smsService *usecase.SmsServiceImpl) *AdminHandler {
+func NewAdminHandler(
+	userUsecase usecase.UserUsecase,
+	priceUsecase usecase.PriceService,
+	smsService usecase.SmsServiceImpl,
+) *AdminHandler {
 	return &AdminHandler{
 		userUsecase:  userUsecase,
 		priceUsecase: priceUsecase,
@@ -24,22 +28,27 @@ func NewAdminHandler(userUsecase usecase.UserUsecase, priceUsecase usecase.Price
 }
 
 type ChangePricingRequest struct {
-	SingleSMS   uint `json:"singleSms"`
-	MultipleSMS uint `json:"multipleSms"`
+	SingleSMS   uint `json:"single_sms"`
+	MultipleSMS uint `json:"multiple_sms"`
 }
 
 type ChangePricingResponse struct {
 	domain.Price
 }
 
+type SMSHistoryResponse struct {
+	Count        int                 `json:"count"`
+	SMSHistories []domain.SMSHistory `json:"sms_histories"`
+}
+
 func (ah *AdminHandler) DisableUser(c echo.Context) error {
 	admin := c.Get("user").(domain.User)
 
+	// Check the user id from url params
 	userId, err := strconv.Atoi(c.Param("userId"))
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, Response{Message: "Invalid user id"})
 	}
-
 	user, err := ah.userUsecase.GetUserById(uint(userId))
 	if err != nil || user.ID <= 0 {
 		return c.JSON(http.StatusBadRequest, Response{Message: "User not found"})
@@ -54,6 +63,7 @@ func (ah *AdminHandler) DisableUser(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, Response{Message: "Can not disable other admins"})
 	}
 
+	// Update the user
 	user.IsActive = false
 	ah.userUsecase.Update(user)
 
@@ -86,23 +96,20 @@ func (ah *AdminHandler) ChangePricing(c echo.Context) error {
 	return c.JSON(http.StatusOK, ChangePricingResponse{price})
 }
 
-type SMSHistoryResponse struct {
-	Count        int                 `json:"count"`
-	SMSHistories []domain.SMSHistory `json:"smsHistories"`
-}
-
 func (ah *AdminHandler) GetSMSHistoryByUserId(c echo.Context) error {
 	_ = c.Get("user").(domain.User)
 
+	// Check the user id from url params
 	userId, err := strconv.Atoi(c.Param("userId"))
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, Response{Message: "Invalid user id"})
 	}
-
 	user, err := ah.userUsecase.GetUserById(uint(userId))
 	if err != nil || user.ID <= 0 {
 		return c.JSON(http.StatusBadRequest, Response{Message: "User not found"})
 	}
+
+	// Get sms histories
 	smsHistories, err := ah.smsService.GetSMSHistoryByUserId(user.ID)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, Response{Message: "Could not get the sms histories: " + err.Error()})
