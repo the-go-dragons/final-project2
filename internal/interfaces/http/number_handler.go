@@ -44,6 +44,8 @@ func (n NumberHandler) Create(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, Response{Message: "Invalid price"})
 	}
 
+	// TODO: Check number duplicatoin
+
 	payload := usecase.NewNumberPayload{
 		Phone: req.Phone,
 		Type:  req.Type,

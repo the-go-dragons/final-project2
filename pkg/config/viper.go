@@ -9,6 +9,8 @@ import (
 	"github.com/spf13/viper"
 )
 
+// TODO: Change the env files
+
 var Config *Configuration
 
 var Path = "."

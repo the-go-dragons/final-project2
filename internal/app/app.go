@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	store     = sessions.NewCookieStore()
+	store     = sessions.NewCookieStore() // TODO: delete the coockie
 	getSecret = func() string {
 		return config.Config.Jwt.Token.Secret.Key
 	}
@@ -98,7 +98,7 @@ func routing(e *echo.Echo) {
 	e.POST("/wallets/charge-request", walletHandler.CharageRequest, customeMiddleware.RequireAuth)
 	e.POST("/wallets/finalize-charge", walletHandler.FinalizeCharge, customeMiddleware.RequireAuth)
 
-	e.PUT("/numbers", numberHandler.Create, customeMiddleware.RequireAuth)
+	e.PUT("/numbers", numberHandler.Create, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
 	e.POST("/numbers/buy-rent", numberHandler.BuyOrRent, customeMiddleware.RequireAuth)
 
 	e.GET("/phonebook", phoneBookHandler.GetAll, customeMiddleware.RequireAuth)

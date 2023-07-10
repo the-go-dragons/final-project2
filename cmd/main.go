@@ -16,8 +16,7 @@ func main() {
 	database.CreateDBConnection()
 	database.AutoMigrateDB()
 	app := app.NewApp()
-	// seeder.Run()
 	rabbitmq.Connect()
 	cronjob.NewCronJobRunner()
-	log.Fatalln(app.Start(config.Config.Server.Port))
+	log.Fatalln(app.Start(config.Config.Server.Port)) // TODO: Fix the logs
 }
