@@ -8,7 +8,7 @@ import (
 type PhoneBookRepository interface {
 	Create(input domain.PhoneBook) (domain.PhoneBook, error)
 	Update(input domain.PhoneBook) (domain.PhoneBook, error)
-	Get(id uint) (domain.PhoneBook, error)
+	GetById(id uint) (domain.PhoneBook, error)
 	Delete(id uint) error
 	GetAll() ([]domain.PhoneBook, error)
 	GetByUser(user *domain.User) ([]domain.PhoneBook, error)
@@ -38,7 +38,7 @@ func (phr PhoneBookRepositoryImpl) Update(input domain.PhoneBook) (domain.PhoneB
 	if err != nil {
 		return phonebook, err
 	}
-	_, err = phr.Get(input.ID)
+	_, err = phr.GetById(input.ID)
 	if err != nil {
 		return phonebook, err
 	}
@@ -50,7 +50,7 @@ func (phr PhoneBookRepositoryImpl) Update(input domain.PhoneBook) (domain.PhoneB
 	return phonebook, nil
 }
 
-func (phr PhoneBookRepositoryImpl) Get(id uint) (domain.PhoneBook, error) {
+func (phr PhoneBookRepositoryImpl) GetById(id uint) (domain.PhoneBook, error) {
 	var phonebook domain.PhoneBook
 	db, _ := database.GetDatabaseConnection()
 

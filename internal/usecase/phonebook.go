@@ -44,7 +44,7 @@ func (n PhoneBookService) Create(dto PhoneBookDto) (domain.PhoneBook, error) {
 }
 
 func (n PhoneBookService) GetById(Id uint) (domain.PhoneBook, error) {
-	return n.phonebookRepo.Get(Id)
+	return n.phonebookRepo.GetById(Id)
 }
 
 func (n PhoneBookService) GetAll() ([]domain.PhoneBook, error) {

@@ -95,11 +95,9 @@ func routing(e *echo.Echo) {
 	e.POST("/phonebook", phoneBookHandler.Create, customeMiddleware.RequireAuth)
 	e.PUT("/phonebook", phoneBookHandler.Edit, customeMiddleware.RequireAuth)
 
-	e.POST("/contact", contactHandler.Create, customeMiddleware.RequireAuth)
-	e.PUT("/contact", contactHandler.Edit, customeMiddleware.RequireAuth)
-	e.GET("/contact", contactHandler.GetAll, customeMiddleware.RequireAuth)
-	e.GET("/contact/phonebook", contactHandler.GetByPhoneBook, customeMiddleware.RequireAuth)
-	e.DELETE("/contact", contactHandler.Delete, customeMiddleware.RequireAuth)
+	e.POST("/contact/:phonebookId", contactHandler.CreateContact, customeMiddleware.RequireAuth)
+	e.GET("/contact/:phonebookId", contactHandler.GetByPhoneBook, customeMiddleware.RequireAuth)
+	e.DELETE("/contact/:phonebookId", contactHandler.DeleteContact, customeMiddleware.RequireAuth)
 
 	e.POST("/sms", smsHandler.SendSingleSMS, customeMiddleware.RequireAuth)
 	e.POST("/sms/periodic", smsHandler.SendSinglePeriodSMS, customeMiddleware.RequireAuth)

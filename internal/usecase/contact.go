@@ -26,32 +26,20 @@ func NewContact(
 	}
 }
 
-func (n ContactService) Create(contact domain.Contact) (domain.Contact, error) {
+func (n ContactService) CreateContact(contact domain.Contact) (domain.Contact, error) {
 	return n.contactRepo.Create(contact)
 }
 
-func (n ContactService) GetById(Id uint) (domain.Contact, error) {
-	return n.contactRepo.Get(Id)
+func (n ContactService) GetContactById(Id uint) (domain.Contact, error) {
+	return n.contactRepo.GetById(Id)
 }
 
-func (n ContactService) GetAll() ([]domain.Contact, error) {
-	return n.contactRepo.GetAll()
-}
-
-func (n ContactService) Edit(contact domain.Contact) (domain.Contact, error) {
-	return n.contactRepo.Update(contact)
-}
-
-func (n ContactService) Delete(Id uint) error {
+func (n ContactService) DeleteContact(Id uint) error {
 	return n.contactRepo.Delete(Id)
 }
 
-func (n ContactService) GetByPhoneBook(phoneBookId uint) ([]domain.Contact, error) {
-	phoneBook, err := n.phonebookRepo.Get(phoneBookId)
-	if err != nil {
-		return make([]domain.Contact, 0), err
-	}
-	return n.contactRepo.GetByPhoneBook(&phoneBook)
+func (n ContactService) GetContactByPhoneBookId(phoneBookId uint) ([]domain.Contact, error) {
+	return n.contactRepo.GetByPhoneBookId(phoneBookId)
 }
 
 func (n ContactService) GetContactByUsername(username string) (domain.Contact, error) {

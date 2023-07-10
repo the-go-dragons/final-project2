@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/asaskevich/govalidator"
 	"github.com/labstack/echo/v4"
 	"github.com/the-go-dragons/final-project2/internal/domain"
 	"github.com/the-go-dragons/final-project2/internal/usecase"
@@ -16,10 +15,9 @@ type ContactHandler struct {
 	phoneBookService usecase.PhoneBookService
 }
 
-type ContactRequest struct {
-	Username    string `json:"username"`
-	Phone       string `json:"phone"`
-	PhoneBookId uint   `json:"phonebook_id"`
+type ContactData struct {
+	Username string `json:"username"`
+	Phone    string `json:"phone"`
 }
 
 func NewContactHandler(
@@ -32,16 +30,22 @@ func NewContactHandler(
 	}
 }
 
-func (n ContactHandler) Create(c echo.Context) error {
+func (ch ContactHandler) CreateContact(c echo.Context) error {
 	user := c.Get("user").(domain.User)
-	var request ContactRequest
+	var request ContactData
+
+	// Check the phonebookId from url params
+	phonebookId, err := strconv.Atoi(c.Param("phonebookId"))
+	if err != nil || phonebookId == 0 {
+		return c.JSON(http.StatusBadRequest, Response{Message: "Invalid phonebook id"})
+	}
 
 	// Check the request body
-	err := c.Bind(&request)
+	err = c.Bind(&request)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, Error{Message: "Invalid data entry"})
 	}
-	if request.Phone == "" || request.Username == "" || request.PhoneBookId == 0 {
+	if request.Phone == "" || request.Username == "" {
 		return c.JSON(http.StatusBadRequest, Response{Message: "Missing required fields"})
 	}
 	if CheckTheNumberFormat(request.Phone) != nil {
@@ -49,33 +53,31 @@ func (n ContactHandler) Create(c echo.Context) error {
 	}
 
 	// Check the phone book
-	phoneBook, err := n.phoneBookService.GetById(request.PhoneBookId)
-	print(1)
+	phoneBook, err := ch.phoneBookService.GetById(uint(phonebookId))
 	if err != nil || phoneBook.ID <= 0 {
-		return c.JSON(http.StatusBadRequest, Response{Message: "phone book not found"})
+		return c.JSON(http.StatusBadRequest, Response{Message: "Phone book not found"})
 	}
-	print(2)
 	if user.ID != phoneBook.UserID {
-		return c.JSON(http.StatusBadRequest, Response{Message: "this phone book is not for user"})
+		return c.JSON(http.StatusBadRequest, Response{Message: "This phone book is not for user"})
 	}
 
 	// Check the dupplication phone in the phone book
-	if dupContact, _ := n.contactService.GetContactByPhone(request.Phone); dupContact.PhoneBookId == phoneBook.ID && dupContact.ID > 0 {
-		return c.JSON(http.StatusBadRequest, Response{Message: "the phone number already exists in the phonebook"})
+	if dupContact, _ := ch.contactService.GetContactByPhone(request.Phone); dupContact.PhoneBookId == phoneBook.ID && dupContact.ID > 0 {
+		return c.JSON(http.StatusBadRequest, Response{Message: "The phone number already exists in the phonebook"})
 	}
 
 	// Check the dupplication username in the phone book
-	if dupContact, _ := n.contactService.GetContactByUsername(request.Username); dupContact.ID > 0 {
-		return c.JSON(http.StatusBadRequest, Response{Message: "the username already exists"})
+	if dupContact, _ := ch.contactService.GetContactByUsername(request.Username); dupContact.ID > 0 {
+		return c.JSON(http.StatusBadRequest, Response{Message: "The username already exists"})
 	}
 
 	dto := domain.Contact{
 		Username:    request.Username,
 		Phone:       request.Phone,
-		PhoneBookId: request.PhoneBookId,
+		PhoneBookId: uint(phonebookId),
 	}
 
-	_, err = n.contactService.Create(dto)
+	_, err = ch.contactService.CreateContact(dto)
 	if err != nil {
 		fmt.Printf("err: %v\n", err)
 		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't create number"})
@@ -84,90 +86,95 @@ func (n ContactHandler) Create(c echo.Context) error {
 	return c.JSON(http.StatusOK, Response{Message: "Created"})
 }
 
-func (n ContactHandler) Edit(c echo.Context) error {
-	var req ContactRequest
-	err := c.Bind(&req)
+func (ch ContactHandler) GetByPhoneBook(c echo.Context) error {
+	user := c.Get("user").(domain.User)
+
+	// Check the phonebookId from url params
+	phonebookId, err := strconv.Atoi(c.Param("phonebookId"))
+	if err != nil || phonebookId == 0 {
+		return c.JSON(http.StatusBadRequest, Response{Message: "Invalid phonebook id"})
+	}
+
+	// Check the phone book
+	phoneBook, err := ch.phoneBookService.GetById(uint(phonebookId))
+	if err != nil || phoneBook.ID <= 0 {
+		return c.JSON(http.StatusBadRequest, Response{Message: "Phone book not found"})
+	}
+	if user.ID != phoneBook.UserID {
+		return c.JSON(http.StatusBadRequest, Response{Message: "This phone book is not for user"})
+	}
+
+	// Get the contacts
+	contacts, err := ch.contactService.GetContactByPhoneBookId(phoneBook.ID)
+
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, Response{Message: "Can't get the contacts"})
+	}
+
+	// Create the response
+	response := make([]ContactData, len(contacts))
+	for index, contact := range contacts {
+		response[index] = ContactData{
+			Phone:    contact.Phone,
+			Username: contact.Username,
+		}
+	}
+
+	return c.JSON(http.StatusOK, response)
+}
+
+func (ch ContactHandler) DeleteContact(c echo.Context) error {
+	user := c.Get("user").(domain.User)
+	var request ContactData
+
+	// Check the phonebookId from url params
+	phonebookId, err := strconv.Atoi(c.Param("phonebookId"))
+	if err != nil || phonebookId == 0 {
+		return c.JSON(http.StatusBadRequest, Response{Message: "Invalid phonebook id"})
+	}
+
+	// Check the request body
+	err = c.Bind(&request)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, Error{Message: "Invalid data entry"})
 	}
-
-	if len(req.Username) == 0 {
-		return c.JSON(http.StatusBadRequest, Response{Message: "Invalid username"})
+	if request.Phone == "" && request.Username == "" {
+		return c.JSON(http.StatusBadRequest, Response{Message: "Missing required fields, Username or phone is required"})
 	}
-
-	if !govalidator.Matches(req.Phone, `^(?:\+98)?\d{6,}$`) {
+	if request.Phone != "" && request.Username != "" {
+		return c.JSON(http.StatusBadRequest, Response{Message: "Only Username or phone is required"})
+	}
+	if request.Phone != "" && CheckTheNumberFormat(request.Phone) != nil {
 		return c.JSON(http.StatusBadRequest, Response{Message: "Invalid phone number"})
 	}
 
-	if req.PhoneBookId == 0 {
-		return c.JSON(http.StatusBadRequest, Response{Message: "Invalid PhoneBookId"})
+	// Check the phone book
+	phoneBook, err := ch.phoneBookService.GetById(uint(phonebookId))
+	if err != nil || phoneBook.ID <= 0 {
+		return c.JSON(http.StatusBadRequest, Response{Message: "Phone book not found"})
+	}
+	if user.ID != phoneBook.UserID {
+		return c.JSON(http.StatusBadRequest, Response{Message: "This phone book is not for user"})
 	}
 
-	// dto := ContactRequest{
-	// 	Username:    req.Username,
-	// 	Phone:       req.Phone,
-	// 	PhoneBookId: req.PhoneBookId,
-	// }
-
-	// _, err = n.contactService.Edit(dto)
-	// if err != nil {
-	// 	fmt.Printf("err: %v\n", err)
-	// 	return c.JSON(http.StatusInternalServerError, Response{Message: "Can't create number"})
-	// }
-
-	return c.JSON(http.StatusOK, Response{Message: "Created"})
-}
-
-func (n ContactHandler) GetByPhoneBook(c echo.Context) error {
-	phonebookId := c.QueryParam("phonebookId")
-	if phonebookId == "" {
-		return c.JSON(http.StatusBadRequest, Error{Message: "Invalid phonebookId"})
+	// Get the contact
+	contact := domain.Contact{}
+	if request.Username != "" {
+		contact, err = ch.contactService.GetContactByUsername(request.Username)
+		if err != nil || contact.ID == 0 {
+			return c.JSON(http.StatusBadRequest, Response{Message: "Can't get contact by username"})
+		}
+	} else {
+		contact, err = ch.contactService.GetContactByPhone(request.Phone)
+		if err != nil || contact.ID == 0 {
+			return c.JSON(http.StatusBadRequest, Response{Message: "Can't get contact by phone"})
+		}
 	}
 
-	iId, err := strconv.Atoi(phonebookId)
+	// Delete the contact
+	err = ch.contactService.DeleteContact(contact.ID)
 	if err != nil {
-		fmt.Printf("err: %v\n", err)
-		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't create number"})
-	}
-	contactList, err := n.contactService.GetByPhoneBook(uint(iId))
-	if err != nil {
-		fmt.Printf("err: %v\n", err)
-		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't create number"})
-	}
-
-	return c.JSON(http.StatusOK, contactList)
-}
-
-func (n ContactHandler) GetAll(c echo.Context) error {
-	contactList, err := n.contactService.GetAll()
-
-	if contactList != nil && len(contactList) == 0 {
-		return c.JSON(http.StatusOK, contactList)
-	}
-
-	if err != nil {
-		fmt.Printf("err: %v\n", err)
-		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't create number"})
-	}
-
-	return c.JSON(http.StatusOK, contactList)
-}
-
-func (n ContactHandler) Delete(c echo.Context) error {
-	id := c.QueryParam("id")
-	if id == "0" {
-		return c.JSON(http.StatusBadRequest, Error{Message: "Invalid id"})
-	}
-
-	iId, err := strconv.Atoi(id)
-	if err != nil {
-		fmt.Printf("err: %v\n", err)
-		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't create number"})
-	}
-	err = n.contactService.Delete(uint(iId))
-	if err != nil {
-		fmt.Printf("err: %v\n", err)
-		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't create number"})
+		return c.JSON(http.StatusBadRequest, Response{Message: "Can't delete the contact"})
 	}
 
 	return c.JSON(http.StatusOK, Response{Message: "Contact Deleted Successfully"})
