@@ -3,21 +3,12 @@ package app
 import (
 	"fmt"
 
-	"github.com/gorilla/sessions"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	customeMiddleware "github.com/the-go-dragons/final-project2/internal/app/middleware"
 	handlers "github.com/the-go-dragons/final-project2/internal/interfaces/http"
 	"github.com/the-go-dragons/final-project2/internal/interfaces/persistence"
 	"github.com/the-go-dragons/final-project2/internal/usecase"
-	"github.com/the-go-dragons/final-project2/pkg/config"
-)
-
-var (
-	store     = sessions.NewCookieStore() // TODO: delete the coockie
-	getSecret = func() string {
-		return config.Config.Jwt.Token.Secret.Key
-	}
 )
 
 type App struct {
@@ -41,11 +32,9 @@ func (application *App) Start(portAddress int) error {
 
 func routing(e *echo.Echo) {
 
-	initializeSessionStore()
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 	e.Use(middleware.Secure())
-	e.Use(SessionMiddleware())
 
 	walletRepo := persistence.NewWalletRepository()
 	subscrptionRepo := persistence.NewSubscriptionRepository()
@@ -87,7 +76,6 @@ func routing(e *echo.Echo) {
 
 	adminHandler := handlers.NewAdminHandler(*userUsecase, priceUsecase, smsService)
 
-	// TODO: add /users route prefix
 	e.POST("/signup", userHandler.Signup)
 	e.POST("/login", userHandler.Login)
 	e.GET("/logout", userHandler.Logout, customeMiddleware.RequireAuth)
@@ -128,27 +116,4 @@ func routing(e *echo.Echo) {
 	e.GET("/admin/disable-user/:userId", adminHandler.DisableUser, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
 	e.GET("/admin/change-priceing", adminHandler.ChangePricing, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
 	e.GET("/admin/sms-report/:userId", adminHandler.GetSMSHistoryByUserId, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
-}
-
-func initializeSessionStore() {
-	store = sessions.NewCookieStore([]byte(getSecret()))
-
-	// Set session options
-	store.Options = &sessions.Options{
-		Path:     "/",
-		MaxAge:   86400, // Session expiration time (in seconds)
-		HttpOnly: true,
-	}
-}
-
-func SessionMiddleware() echo.MiddlewareFunc {
-	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-
-			session, _ := store.Get(c.Request(), "go-dragon-session")
-			c.Set("session", session)
-
-			return next(c)
-		}
-	}
 }

@@ -7,7 +7,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/dgrijalva/jwt-go"
-	"github.com/gorilla/sessions"
 	"github.com/labstack/echo/v4"
 	"github.com/the-go-dragons/final-project2/internal/domain"
 	"github.com/the-go-dragons/final-project2/pkg/config"
@@ -78,16 +77,9 @@ func (uh *UserHandler) Login(c echo.Context) error {
 		// update IsLoginRequired field
 		user.IsLoginRequired = false
 		uh.userUsecase.Update(user)
-		SetUserToSession(c, user)
 
 		return c.JSON(http.StatusOK, LoginResponse{Message: "You logged in successfully", Token: token})
 	}
 
 	return c.JSON(http.StatusConflict, Response{Message: "No user found with this credentials"})
-}
-
-func SetUserToSession(c echo.Context, user *domain.User) {
-	session := c.Get("session").(*sessions.Session)
-	session.Values["userID"] = user.ID
-	session.Save(c.Request(), c.Response())
 }
