@@ -19,7 +19,7 @@ To run this application you have two aptions:
 	```shell
     docker-compose up -d
     ```
-    And the run the go:
+    And then run the go:
 
     ```shell
     go run ./cmd
