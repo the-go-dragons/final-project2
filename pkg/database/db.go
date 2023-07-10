@@ -147,6 +147,7 @@ func AutoMigrateDB() error {
 	}
 
 	err = conn.AutoMigrate(
+		&model.Price{},
 		&model.User{},
 		&model.Wallet{},
 		&model.Payment{},
