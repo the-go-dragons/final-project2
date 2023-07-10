@@ -10,15 +10,26 @@ import (
 )
 
 type AdminHandler struct {
-	userUsecase *usecase.UserUsecase
-	smsService  *usecase.SmsServiceImpl
+	userUsecase  usecase.UserUsecase
+	priceUsecase usecase.PriceService
+	smsService   *usecase.SmsServiceImpl
 }
 
-func NewAdminHandler(userUsecase *usecase.UserUsecase, smsService *usecase.SmsServiceImpl) *AdminHandler {
+func NewAdminHandler(userUsecase usecase.UserUsecase, priceUsecase usecase.PriceService, smsService *usecase.SmsServiceImpl) *AdminHandler {
 	return &AdminHandler{
-		userUsecase: userUsecase,
-		smsService:  smsService,
+		userUsecase:  userUsecase,
+		priceUsecase: priceUsecase,
+		smsService:   smsService,
 	}
+}
+
+type ChangePricingRequest struct {
+	SingleSMS   uint `json:"singleSms"`
+	MultipleSMS uint `json:"multipleSms"`
+}
+
+type ChangePricingResponse struct {
+	domain.Price
 }
 
 func (ah *AdminHandler) DisableUser(c echo.Context) error {
@@ -47,6 +58,32 @@ func (ah *AdminHandler) DisableUser(c echo.Context) error {
 	ah.userUsecase.Update(user)
 
 	return c.JSON(http.StatusOK, Response{Message: "User disabled successfully"})
+}
+
+func (ah *AdminHandler) ChangePricing(c echo.Context) error {
+	_ = c.Get("user").(domain.User)
+	var request ChangePricingRequest
+
+	// Check the request body
+	err := c.Bind(&request)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, Error{Message: "Invalid data entry"})
+	}
+	if request.SingleSMS == 0 || request.MultipleSMS == 0 {
+		return c.JSON(http.StatusBadRequest, Response{Message: "Missing required fields"})
+	}
+
+	// Update the price
+	price := domain.Price{
+		SingleSMS:   request.SingleSMS,
+		MultipleSMS: request.MultipleSMS,
+	}
+	price, err = ah.priceUsecase.Update(price)
+	if err != nil || price.ID <= 0 {
+		return c.JSON(http.StatusBadRequest, Response{Message: "Can not update the price: " + err.Error()})
+	}
+
+	return c.JSON(http.StatusOK, ChangePricingResponse{price})
 }
 
 type SMSHistoryResponse struct {
