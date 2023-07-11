@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/streadway/amqp"
+	"github.com/the-go-dragons/final-project2/pkg/config"
 )
 
 var rabbitmqChannel *amqp.Channel
@@ -16,35 +17,35 @@ type SMSBody struct {
 }
 
 func Connect() {
-	// if rabbitmqChannel != nil {
-	// 	return
-	// }
-	// amqpServerURL := config.Config.Ribbitmq.Url
+	if rabbitmqChannel != nil {
+		return
+	}
+	amqpServerURL := config.Config.Ribbitmq.Url
 
-	// // Create a new RabbitMQ connection.
-	// conn, err := amqp.Dial(amqpServerURL)
-	// if err != nil {
-	// 	panic(err)
-	// }
+	// Create a new RabbitMQ connection.
+	conn, err := amqp.Dial(amqpServerURL)
+	if err != nil {
+		panic(err)
+	}
 
-	// rabbitmqChannel, err = conn.Channel()
-	// if err != nil {
-	// 	panic(err)
-	// }
+	rabbitmqChannel, err = conn.Channel()
+	if err != nil {
+		panic(err)
+	}
 
-	// _, err = rabbitmqChannel.QueueDeclare(
-	// 	"SMS", // queue name
-	// 	true,  // durable
-	// 	false, // auto delete
-	// 	false, // exclusive
-	// 	false, // no wait
-	// 	nil,   // arguments
-	// )
-	// if err != nil {
-	// 	panic(err)
-	// }
+	_, err = rabbitmqChannel.QueueDeclare(
+		"SMS", // queue name
+		true,  // durable
+		false, // auto delete
+		false, // exclusive
+		false, // no wait
+		nil,   // arguments
+	)
+	if err != nil {
+		panic(err)
+	}
 
-	// fmt.Println("Connected to RabbitMQ")
+	fmt.Println("Connected to RabbitMQ")
 }
 
 func NewMassage(body SMSBody) {
