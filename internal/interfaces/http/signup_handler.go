@@ -20,8 +20,11 @@ func (uh *UserHandler) Signup(c echo.Context) error {
 	err := c.Bind(&request)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, Response{Message: "Invalid body request"})
-
 	}
+
+	fmt.Printf("request.Username: %v\n", request.Username)
+	fmt.Printf("request.Password: %v\n", request.Password)
+
 	if request.Username == "" || request.Password == "" {
 		return c.JSON(http.StatusBadRequest, Response{Message: "Missing required fields"})
 	}

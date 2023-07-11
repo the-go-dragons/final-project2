@@ -112,6 +112,7 @@ func routing(e *echo.Echo) {
 
 	e.POST("/sms", smsHandler.SendSMS, customeMiddleware.RequireAuth)
 	e.POST("/sms/username", smsHandler.SendSMSByUsername, customeMiddleware.RequireAuth)
+	e.POST("/sms/phonebooks", smsHandler.SendSMSToPhonebooks, customeMiddleware.RequireAuth)
 
 	e.POST("/templates/new", smsTemplateHandler.NewSmsTemplate, customeMiddleware.RequireAuth)
 

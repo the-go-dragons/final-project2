@@ -141,3 +141,7 @@ func (n ContactService) CreateSmsContact(senderNumber string, receiverNumber str
 	}
 	return nil
 }
+
+func (n ContactService) GetContactsByPhonebooks(phoneBookIds []uint) ([]domain.Contact, error) {
+	return n.contactRepo.GetByPhoneBookIdIn(phoneBookIds)
+}
