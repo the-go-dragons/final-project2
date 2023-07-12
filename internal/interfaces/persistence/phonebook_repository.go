@@ -99,7 +99,7 @@ func (phr PhoneBookRepositoryImpl) GetByUser(user *domain.User) ([]domain.PhoneB
 	var phonebooks []domain.PhoneBook
 	db, _ := database.GetDatabaseConnection()
 
-	tx := db.Debug().Where("User = ?", user).Find(&phonebooks)
+	tx := db.Debug().Where("user_id = ?", user.ID).Find(&phonebooks)
 
 	if err := tx.Error; err != nil {
 		return phonebooks, err

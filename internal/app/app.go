@@ -95,7 +95,7 @@ func routing(e *echo.Echo) {
 	e.POST("/wallets/charge-request", walletHandler.CharageRequest)
 	e.POST("/wallets/finalize-charge", walletHandler.FinalizeCharge)
 
-	e.PUT("/numbers", numberHandler.Create)
+	e.POST("/numbers", numberHandler.Create)
 	e.POST("/numbers/buy-rent", numberHandler.BuyOrRent, customeMiddleware.RequireAuth)
 
 	e.GET("/phonebook", phoneBookHandler.GetAll)
@@ -112,6 +112,7 @@ func routing(e *echo.Echo) {
 
 	e.POST("/sms", smsHandler.SendSMS, customeMiddleware.RequireAuth)
 	e.POST("/sms/username", smsHandler.SendSMSByUsername, customeMiddleware.RequireAuth)
+	e.POST("/sms/phonebooks", smsHandler.SendSMSToPhonebooks, customeMiddleware.RequireAuth)
 
 	e.POST("/templates/new", smsTemplateHandler.NewSmsTemplate, customeMiddleware.RequireAuth)
 

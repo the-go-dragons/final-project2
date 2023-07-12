@@ -1,9 +1,10 @@
 package persistence
 
 import (
+	"time"
+
 	"github.com/the-go-dragons/final-project2/internal/domain"
 	"github.com/the-go-dragons/final-project2/pkg/database"
-	"time"
 )
 
 type SubscriptionRepository interface {
@@ -59,16 +60,16 @@ func (a SubscriptionRepositoryImpl) GetByUserId(id uint) (domain.Subscription, e
 }
 
 func (a SubscriptionRepositoryImpl) GetByNumber(number domain.Number) (domain.Subscription, error) {
-	var subscription domain.Subscription
-	db, _ := database.GetDatabaseConnection()
+    var subscription domain.Subscription
+    db, _ := database.GetDatabaseConnection()
 
-	tx := db.Where("number_id = ?", number.ID).
-		Where("expiration_date > ", time.Now()).
-		First(&subscription)
+    tx := db.Where("number_id = ?", number.ID).
+        Where("expiration_date > ?", time.Now()).
+        First(&subscription)
 
-	if err := tx.Error; err != nil {
-		return subscription, err
-	}
+    if err := tx.Error; err != nil {
+        return subscription, err
+    }
 
-	return subscription, nil
+    return subscription, nil
 }

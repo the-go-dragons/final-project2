@@ -41,12 +41,12 @@ func Load() {
 	testDb = config.Config.Database.Test
 	// user = "root"
 	// password = "PSUliSks8J3QPrDuGIx9egwo"
-	// db = "smsproject"
+	// db = "final_db"
 	// host = "luca.iran.liara.ir"
 	// port = 31835
 	// ssl = "disable"
 	// timezone = "Asia/tehran"
-	// testDb = "smsprojecttest"
+	// testDb = "final_db"
 }
 
 func GetDSN() string {
@@ -155,6 +155,10 @@ func AutoMigrateDB() error {
 		&model.PhoneBook{},
 		&model.SMSHistory{},
 		&model.CronJob{},
+		&model.Contact{},
+		&model.Subscription{},
+		&model.Number{},
+		
 	)
 
 	// sqlDB, err := conn.DB()

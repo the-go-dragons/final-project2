@@ -13,8 +13,8 @@ type SMSHistory struct {
 	User            User      `json:"user"`
 	SenderNumber    string    `json:"senderNumber"`
 	ReceiverNumbers string    `json:"receiverNumbers"`
-	PhoneBookId     uint      `json:"phoneBookId"`
-	PhoneBook       PhoneBook `json:"phoneBook"`
+    PhoneBookId     uint      `json:"phoneBookId" gorm:"column:phone_book_id"`
+    PhoneBook       PhoneBook `json:"phoneBook,omitempty"`
 	Content         string    `json:"content"`
 	CreatedAt       time.Time `json:"createdAt"`
 	UpdatedAt       time.Time `json:"updatedAt"`
