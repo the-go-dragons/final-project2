@@ -7,8 +7,9 @@ import (
 type NumberTypeEnum byte
 
 const (
-	Sale NumberTypeEnum = 1
-	Rent NumberTypeEnum = 2
+	Sale   NumberTypeEnum = 1
+	Rent   NumberTypeEnum = 2
+	Public NumberTypeEnum = 3
 )
 
 type Number struct {

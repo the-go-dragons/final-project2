@@ -17,12 +17,14 @@ type SmsHandler struct {
 	smsService       *usecase.SmsServiceImpl
 	contactService   *usecase.ContactService
 	phoneBookService *usecase.PhoneBookService
+	wordService      *usecase.InappropriateWordService
 }
 
 func NewSmsHandler(
 	smsService usecase.SmsServiceImpl,
 	contactService usecase.ContactService,
 	phoneBookService usecase.PhoneBookService,
+	wordService usecase.InappropriateWordService,
 ) SmsHandler {
 	return SmsHandler{
 		smsService:       &smsService,
@@ -126,6 +128,11 @@ func (s SmsHandler) SendSingleSMSByUsername(c echo.Context) error {
 	}
 	if contact.PhoneBookId != phoneBook.ID {
 		return c.JSON(http.StatusBadRequest, Response{Message: "the contact is not for the given phone book"})
+	}
+
+	err = s.wordService.CheckInappropriateWordsWithRegex(request.Content)
+	if err != nil {
+		return err
 	}
 
 	// Send sms and new sms history
