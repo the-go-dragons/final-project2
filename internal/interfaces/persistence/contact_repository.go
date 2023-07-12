@@ -101,7 +101,7 @@ func (cr ContactRepositoryImpl) GetByPhoneBook(phoneBook *domain.PhoneBook) ([]d
 	var contacts []domain.Contact
 	db, _ := database.GetDatabaseConnection()
 
-	tx := db.Debug().Where("PhoneBook = ?", phoneBook).Find(&contacts)
+	tx := db.Debug().Where("phone_book_id = ?", phoneBook.ID).Find(&contacts)
 
 	if err := tx.Error; err != nil {
 		return contacts, err
@@ -114,7 +114,7 @@ func (cr ContactRepositoryImpl) GetByPhoneBookIdIn(phonebookIds []uint) ([]domai
 	var contacts []domain.Contact
 	db, _ := database.GetDatabaseConnection()
 
-	tx := db.Debug().Where("PhoneBook in ?", phonebookIds).Find(&contacts)
+	tx := db.Debug().Where("phone_book_id in ?", phonebookIds).Find(&contacts)
 
 	if err := tx.Error; err != nil {
 		return contacts, err

@@ -33,6 +33,7 @@ func (s SmsHandler) SendSMS(c echo.Context) error {
 	if user.ID == 0 {
 		return c.JSON(http.StatusNetworkAuthenticationRequired, Response{Message: "Login first"})
 	}
+
 	req.User = user
 	req.UserId = user.ID
 

@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/the-go-dragons/final-project2/internal/domain"
@@ -107,6 +108,8 @@ func (n ContactService) CreateSmsContact(senderNumber string, receiverNumber str
 	if subscription.ID == 0 || subscription.UserID == 0 {
 		return errors.New("this number is assigned to any subscription")
 	}
+
+	fmt.Printf("subscription: %v\n", subscription)
 	phoneBooks, err := n.phonebookRepo.GetByUser(&subscription.User)
 	if err != nil {
 		return err

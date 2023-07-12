@@ -63,7 +63,6 @@ func NewSmsService(smsRepo persistence.SmsHistoryRepository,
 
 func (s SmsServiceImpl) SendSingle(smsDto SMSHistoryDto) error {
 	var phoneBook domain.PhoneBook
-	fmt.Printf("\"sendSingle\": %v\n", "sendSingle")
 	if smsDto.PhoneBookId != 0 {
 		phoneBookById, err := s.phonebookRepo.Get(smsDto.PhoneBookId)
 		if err != nil {
@@ -75,7 +74,6 @@ func (s SmsServiceImpl) SendSingle(smsDto SMSHistoryDto) error {
 		if err != nil {
 			return err
 		}
-		fmt.Printf("number: %v\n", number.ID)
 		if number.ID == 0 {
 			return errors.New("there is no such a number")
 		}
@@ -83,15 +81,19 @@ func (s SmsServiceImpl) SendSingle(smsDto SMSHistoryDto) error {
 		if err != nil {
 			return err
 		}
-		fmt.Printf("subscription: %v\n", subscription)
+
+		fmt.Printf("subscription.UserID: %v\n", subscription.UserID)
+		fmt.Printf("subscription.User.ID: %v\n", subscription.User.ID)
 		if subscription.ID == 0 || subscription.UserID == 0 {
 			return errors.New("this number is assigned to any subscription")
 		}
-		phoneBooks, err := s.phonebookRepo.GetByUser(&subscription.User)
+		user := &domain.User{
+			ID: subscription.UserID,
+		}
+		phoneBooks, err := s.phonebookRepo.GetByUser(user)
 		if err != nil {
 			return err
 		}
-		fmt.Printf("phoneBooks: %v\n", phoneBooks)
 		if len(phoneBooks) == 0 {
 			return errors.New("this user has no phonebook")
 		}
@@ -242,6 +244,9 @@ func (s SmsServiceImpl) SendToPhonebooks(smsDto SmsPhonebookDto) error {
 			Receivers: contact.Phone,
 			Massage:   smsDto.Content,
 		}
+
+		_ = smsBody
+
 		rabbitmq.NewMassage(smsBody)
 	}
 

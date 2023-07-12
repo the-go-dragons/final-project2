@@ -95,7 +95,7 @@ func routing(e *echo.Echo) {
 	e.POST("/wallets/charge-request", walletHandler.CharageRequest)
 	e.POST("/wallets/finalize-charge", walletHandler.FinalizeCharge)
 
-	e.PUT("/numbers", numberHandler.Create)
+	e.POST("/numbers", numberHandler.Create)
 	e.POST("/numbers/buy-rent", numberHandler.BuyOrRent, customeMiddleware.RequireAuth)
 
 	e.GET("/phonebook", phoneBookHandler.GetAll)

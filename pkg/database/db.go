@@ -11,7 +11,6 @@ import (
 
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	model "github.com/the-go-dragons/final-project2/internal/domain"
-	"github.com/the-go-dragons/final-project2/pkg/config"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -31,22 +30,22 @@ var (
 )
 
 func Load() {
-	user = config.Config.Database.User
-	password = config.Config.Database.Password
-	db = config.Config.Database.Name
-	host = config.Config.Database.Host
-	port = config.Config.Database.Port
-	ssl = config.Config.Database.Ssl
-	timezone = config.Config.Database.Timezone
-	testDb = config.Config.Database.Test
-	// user = "root"
-	// password = "PSUliSks8J3QPrDuGIx9egwo"
-	// db = "smsproject"
-	// host = "luca.iran.liara.ir"
-	// port = 31835
-	// ssl = "disable"
-	// timezone = "Asia/tehran"
-	// testDb = "smsprojecttest"
+	// user = config.Config.Database.User
+	// password = config.Config.Database.Password
+	// db = config.Config.Database.Name
+	// host = config.Config.Database.Host
+	// port = config.Config.Database.Port
+	// ssl = config.Config.Database.Ssl
+	// timezone = config.Config.Database.Timezone
+	// testDb = config.Config.Database.Test
+	user = "root"
+	password = "PSUliSks8J3QPrDuGIx9egwo"
+	db = "final_db"
+	host = "luca.iran.liara.ir"
+	port = 31835
+	ssl = "disable"
+	timezone = "Asia/tehran"
+	testDb = "final_db"
 }
 
 func GetDSN() string {
@@ -155,6 +154,10 @@ func AutoMigrateDB() error {
 		&model.PhoneBook{},
 		&model.SMSHistory{},
 		&model.CronJob{},
+		&model.Contact{},
+		&model.Subscription{},
+		&model.Number{},
+		
 	)
 
 	// sqlDB, err := conn.DB()
