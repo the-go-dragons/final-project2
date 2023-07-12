@@ -17,4 +17,6 @@ type User struct {
 	IsActive        bool      `json:"isActive" gorm:"default:true"`
 	CreatedAt       time.Time `json:"createdAt"`
 	UpdatedAt       time.Time `json:"updatedAt"`
+	DefaultNumber   *Number   `json:"defaultNumber"`
+	DefaultNumberID *uint     `json:"defaultNumberID"`
 }
