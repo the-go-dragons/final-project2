@@ -12,7 +12,7 @@ type Response struct {
 }
 
 func CheckTheNumberFormat(number string) error {
-	if !govalidator.Matches(number, `^(?:\+98)?\d{6,}$`) {
+	if !govalidator.Matches(number, `^\+98\d{10}$`) {
 		return errors.New("")
 	}
 	return nil

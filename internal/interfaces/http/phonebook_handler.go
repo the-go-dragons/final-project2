@@ -48,22 +48,6 @@ func (pbh PhoneBookHandler) Create(c echo.Context) error {
 	return c.JSON(http.StatusOK, Response{Message: "Created"})
 }
 
-// func (pbh PhoneBookHandler) GetByUserName(c echo.Context) error {
-// 	user := c.Get("user").(domain.User)
-// 	if user.ID == 0 || user.Username == "" {
-// 		return c.JSON(http.StatusBadRequest, Error{Message: "login first"})
-// 	}
-// 	username := user.Username
-
-// 	phonebookList, err := n.phonebookService.GetByUserName(username)
-// 	if err != nil {
-//
-// 		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't create number"})
-// 	}
-
-// 	return c.JSON(http.StatusOK, phonebookList)
-// }
-
 func (pbh PhoneBookHandler) GetAll(c echo.Context) error {
 	user := c.Get("user").(domain.User)
 	phonebookList, err := pbh.phonebookService.GetAllPhoneBooksByUserId(user.ID)
@@ -77,17 +61,12 @@ func (pbh PhoneBookHandler) GetAll(c echo.Context) error {
 
 func (pbh PhoneBookHandler) Delete(c echo.Context) error {
 	user := c.Get("user").(domain.User)
-	id := c.QueryParam("id")
-	if id == "0" {
-		return c.JSON(http.StatusBadRequest, Error{Message: "Invalid id"})
+	phonebookId, err := strconv.Atoi(c.Param("id"))
+	if err != nil || phonebookId == 0 {
+		return c.JSON(http.StatusInternalServerError, Response{Message: "Invalid id"})
 	}
 
-	iId, err := strconv.Atoi(id)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't convert id"})
-	}
-
-	phonebook, err := pbh.phonebookService.GetPhoneBookById(uint(iId))
+	phonebook, err := pbh.phonebookService.GetPhoneBookById(uint(phonebookId))
 	if err != nil || phonebook.ID == 0 {
 		return c.JSON(http.StatusBadRequest, Error{Message: "Phonebook not found"})
 	}
@@ -96,7 +75,7 @@ func (pbh PhoneBookHandler) Delete(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, Error{Message: "Phonebook is not for the user"})
 	}
 
-	err = pbh.phonebookService.DeletePhoneBook(uint(iId))
+	err = pbh.phonebookService.DeletePhoneBook(uint(phonebookId))
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't delete phone book"})
 	}

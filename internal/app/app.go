@@ -95,7 +95,7 @@ func routing(e *echo.Echo) {
 	e.POST("/numbers/buy-rent", numberHandler.BuyOrRent, customeMiddleware.RequireAuth)
 
 	e.GET("/phonebook", phoneBookHandler.GetAll, customeMiddleware.RequireAuth)
-	e.DELETE("/phonebook", phoneBookHandler.Delete, customeMiddleware.RequireAuth)
+	e.DELETE("/phonebook/:id", phoneBookHandler.Delete, customeMiddleware.RequireAuth)
 	e.POST("/phonebook", phoneBookHandler.Create, customeMiddleware.RequireAuth)
 
 	e.POST("/contact/:phonebookId", contactHandler.CreateContact, customeMiddleware.RequireAuth)

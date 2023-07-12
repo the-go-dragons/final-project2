@@ -9,8 +9,6 @@ type PhoneBookService interface {
 	CreatePhoneBook(domain.PhoneBook) (domain.PhoneBook, error)
 	GetPhoneBookById(uint) (domain.PhoneBook, error)
 	GetAllPhoneBooksByUserId(uint) ([]domain.PhoneBook, error)
-	GetPhoneBookByUserName(string) ([]domain.PhoneBook, error)
-	UpdatePhoneBook(domain.PhoneBook) (domain.PhoneBook, error)
 	DeletePhoneBook(uint) error
 }
 
@@ -45,24 +43,6 @@ func (pbs phoneBookService) GetPhoneBookById(id uint) (domain.PhoneBook, error) 
 
 func (pbs phoneBookService) GetAllPhoneBooksByUserId(userId uint) ([]domain.PhoneBook, error) {
 	return pbs.phonebookRepo.GetAllByUserId(userId)
-}
-
-func (pbs phoneBookService) GetPhoneBookByUserName(username string) ([]domain.PhoneBook, error) {
-	user, err := pbs.userRepo.GeByUsername(username)
-	if err != nil {
-		return make([]domain.PhoneBook, 0), err
-	}
-	return pbs.phonebookRepo.GetByUser(user)
-}
-
-func (pbs phoneBookService) UpdatePhoneBook(input domain.PhoneBook) (domain.PhoneBook, error) {
-	// user, err := pbs.userRepo.GetById(input.UserID)
-	// if err != nil {
-	// 	return domain.PhoneBook{}, err
-	// }
-	// input.User = user
-
-	return pbs.phonebookRepo.Update(input)
 }
 
 func (pbs phoneBookService) DeletePhoneBook(Id uint) error {

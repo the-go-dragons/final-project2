@@ -7,11 +7,9 @@ import (
 
 type PhoneBookRepository interface {
 	Create(domain.PhoneBook) (domain.PhoneBook, error)
-	Update(domain.PhoneBook) (domain.PhoneBook, error)
 	GetById(uint) (domain.PhoneBook, error)
 	Delete(uint) error
 	GetAllByUserId(uint) ([]domain.PhoneBook, error)
-	GetByUser(domain.User) ([]domain.PhoneBook, error)
 }
 
 type phoneBookRepository struct {
@@ -25,14 +23,6 @@ func (phr phoneBookRepository) Create(input domain.PhoneBook) (domain.PhoneBook,
 	db, _ := database.GetDatabaseConnection()
 
 	tx := db.Debug().Create(&input)
-
-	return input, tx.Error
-}
-
-func (phr phoneBookRepository) Update(input domain.PhoneBook) (domain.PhoneBook, error) {
-	db, _ := database.GetDatabaseConnection()
-
-	tx := db.Save(&input)
 
 	return input, tx.Error
 }
@@ -67,15 +57,6 @@ func (phr phoneBookRepository) GetAllByUserId(userId uint) ([]domain.PhoneBook, 
 	db = db.Model(&phonebooks)
 
 	tx := db.Where("user_id = ?", userId).Find(&phonebooks)
-
-	return phonebooks, tx.Error
-}
-
-func (phr phoneBookRepository) GetByUser(user domain.User) ([]domain.PhoneBook, error) {
-	var phonebooks []domain.PhoneBook
-	db, _ := database.GetDatabaseConnection()
-
-	tx := db.Debug().Where("user_id = ?", user.ID).Find(&phonebooks)
 
 	return phonebooks, tx.Error
 }
