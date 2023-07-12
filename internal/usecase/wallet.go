@@ -1,6 +1,8 @@
 package usecase
 
 import (
+	"errors"
+
 	"github.com/the-go-dragons/final-project2/internal/domain"
 	"github.com/the-go-dragons/final-project2/internal/interfaces/persistence"
 )
@@ -72,4 +74,15 @@ func (w WalletService) FinalizeCharge(paymentID int) (uint, error) {
 
 func (w WalletService) GetByUserId(id uint) (domain.Wallet, error) {
 	return w.walletRepo.GetByUserId(id)
+}
+
+func (ws WalletService) CheckTheWalletBalance(user domain.User, price uint) error {
+	wallet, err := ws.walletRepo.GetByUserId(user.ID)
+	if err != nil || wallet.ID == 0 {
+		return errors.New("Can't get the wallet")
+	}
+	if wallet.Balance < price {
+		return errors.New("Not enough balance")
+	}
+	return nil
 }
