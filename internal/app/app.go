@@ -74,9 +74,13 @@ func routing(e *echo.Echo) {
 	contactService := usecase.NewContact(phonebookRepo, contactRepo, numberRepo, subscrptionRepo)
 	contactHandler := handlers.NewContactHandler(contactService)
 
+	wordRepo := persistence.NewInappropriateWordRepository()
+	wordService := usecase.NewInappropriateWord(wordRepo)
+	wordHandler := handlers.NewInappropriateWordHandler(wordService)
+
 	smsRepository := persistence.NewSmsHistoryRepository()
 	smsService := usecase.NewSmsService(smsRepository, *userRepo, phonebookRepo, numberRepo, subscrptionRepo, contactRepo)
-	smsHandler := handlers.NewSmsHandler(smsService, contactService)
+	smsHandler := handlers.NewSmsHandler(smsService, contactService, &wordService)
 
 	smsTemplateRepo := persistence.NewSmsTemplateRepository()
 	smsTemplateUsecase := usecase.NewSmsTemplateUsecase(smsTemplateRepo)
@@ -117,6 +121,11 @@ func routing(e *echo.Echo) {
 	e.POST("/templates/new", smsTemplateHandler.NewSmsTemplate, customeMiddleware.RequireAuth)
 
 	e.GET("/admin/disable-user/:userId", adminHandler.DisableUser, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
+
+	e.POST("/inappropriate-word", wordHandler.Create, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
+	e.PUT("/inappropriate-word", wordHandler.Edit, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
+	e.GET("/inappropriate-word", wordHandler.GetAll, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
+	e.DELETE("/inappropriate-word", wordHandler.Delete, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
 }
 
 func initializeSessionStore() {
