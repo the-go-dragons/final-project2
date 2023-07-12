@@ -6,63 +6,45 @@ import (
 )
 
 type InappropriateWordRepository interface {
-	Create(input domain.InappropriateWord) (domain.InappropriateWord, error)
-	Update(input domain.InappropriateWord) (domain.InappropriateWord, error)
-	Get(id uint) (domain.InappropriateWord, error)
-	Delete(id uint) error
+	Create(domain.InappropriateWord) (domain.InappropriateWord, error)
+	Update(domain.InappropriateWord) (domain.InappropriateWord, error)
+	Get(uint) (domain.InappropriateWord, error)
+	Delete(uint) error
 	GetAll() ([]domain.InappropriateWord, error)
 }
 
-type InappropriateWordRepositoryImpl struct {
+type inappropriateWordRepository struct {
 }
 
 func NewInappropriateWordRepository() InappropriateWordRepository {
-	return InappropriateWordRepositoryImpl{}
+	return inappropriateWordRepository{}
 }
 
-func (iwr InappropriateWordRepositoryImpl) Create(input domain.InappropriateWord) (domain.InappropriateWord, error) {
+func (iwr inappropriateWordRepository) Create(input domain.InappropriateWord) (domain.InappropriateWord, error) {
 	db, _ := database.GetDatabaseConnection()
 	tx := db.Debug().Create(&input)
 
-	if tx.Error != nil {
-		return input, tx.Error
-	}
-
-	return input, nil
+	return input, tx.Error
 }
 
-func (iwr InappropriateWordRepositoryImpl) Update(input domain.InappropriateWord) (domain.InappropriateWord, error) {
-	var word domain.InappropriateWord
-	db, err := database.GetDatabaseConnection()
-	if err != nil {
-		return word, err
-	}
-	_, err = iwr.Get(input.ID)
-	if err != nil {
-		return word, err
-	}
-	tx := db.Save(input)
-	if err := tx.Error; err != nil {
-		return word, err
-	}
+func (iwr inappropriateWordRepository) Update(input domain.InappropriateWord) (domain.InappropriateWord, error) {
+	db, _ := database.GetDatabaseConnection()
 
-	return word, nil
+	tx := db.Save(&input)
+
+	return input, tx.Error
 }
 
-func (iwr InappropriateWordRepositoryImpl) Get(id uint) (domain.InappropriateWord, error) {
+func (iwr inappropriateWordRepository) Get(id uint) (domain.InappropriateWord, error) {
 	var word domain.InappropriateWord
 	db, _ := database.GetDatabaseConnection()
 
 	tx := db.First(&word, id)
 
-	if err := tx.Error; err != nil {
-		return word, err
-	}
-
-	return word, nil
+	return word, tx.Error
 }
 
-func (iwr InappropriateWordRepositoryImpl) Delete(id uint) error {
+func (iwr inappropriateWordRepository) Delete(id uint) error {
 	var word domain.InappropriateWord
 	db, _ := database.GetDatabaseConnection()
 
@@ -73,23 +55,16 @@ func (iwr InappropriateWordRepositoryImpl) Delete(id uint) error {
 	}
 
 	tx = tx.Delete(&word)
-	if err := tx.Error; err != nil {
-		return err
-	}
 
-	return nil
+	return tx.Error
 }
 
-func (iwr InappropriateWordRepositoryImpl) GetAll() ([]domain.InappropriateWord, error) {
+func (iwr inappropriateWordRepository) GetAll() ([]domain.InappropriateWord, error) {
 	var words = make([]domain.InappropriateWord, 0)
 	db, _ := database.GetDatabaseConnection()
 	db = db.Model(&words)
 
 	tx := db.Debug().Find(&words)
 
-	if err := tx.Error; err != nil {
-		return words, err
-	}
-
-	return words, nil
+	return words, tx.Error
 }
