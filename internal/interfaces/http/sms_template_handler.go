@@ -11,24 +11,33 @@ import (
 	"github.com/the-go-dragons/final-project2/pkg/cronjob"
 )
 
-type SmsTemplateHandler struct {
-	smsTemplateUseCase *usecase.SmsTemplateUsecase
-	smsService         *usecase.SmsServiceImpl
-	contactService     *usecase.ContactService
-	phoneBookService   *usecase.PhoneBookService
+type SMSTemplateHandler interface {
+	NewSmsTemplate(echo.Context) error
+	SmsTemplateList(echo.Context) error
+	NewSingleSmsWithTemplate(echo.Context) error
+	NewSingleSmsWithUsernameWithTemplate(echo.Context) error
+	NewSinglePeriodSmsWithTemplate(echo.Context) error
+	NewSinglePeriodSmsWithUsernameWithTemplate(echo.Context) error
+}
+
+type smsTemplateHandler struct {
+	smsTemplateService usecase.SMSTemplateService
+	smsService         usecase.SMSService
+	contactService     usecase.ContactService
+	phoneBookService   usecase.PhoneBookService
 }
 
 func NewSmsTemplateHandler(
-	smsTemplateUseCase usecase.SmsTemplateUsecase,
-	smsService usecase.SmsServiceImpl,
+	smsTemplateService usecase.SMSTemplateService,
+	smsService usecase.SMSService,
 	contactService usecase.ContactService,
 	phoneBookService usecase.PhoneBookService,
-) *SmsTemplateHandler {
-	return &SmsTemplateHandler{
-		smsTemplateUseCase: &smsTemplateUseCase,
-		smsService:         &smsService,
-		contactService:     &contactService,
-		phoneBookService:   &phoneBookService,
+) SMSTemplateHandler {
+	return smsTemplateHandler{
+		smsTemplateService: smsTemplateService,
+		smsService:         smsService,
+		contactService:     contactService,
+		phoneBookService:   phoneBookService,
 	}
 }
 
@@ -75,7 +84,7 @@ type SinglePeriodSmsWithUsernameWithTemplateRequest struct {
 	RepeatationCount uint   `json:"repeatationCount"`
 }
 
-func (smsh *SmsTemplateHandler) NewSmsTemplate(c echo.Context) error {
+func (smsh smsTemplateHandler) NewSmsTemplate(c echo.Context) error {
 	user := c.Get("user").(domain.User)
 	var request NewSmsTemplateRequest
 
@@ -100,19 +109,19 @@ func (smsh *SmsTemplateHandler) NewSmsTemplate(c echo.Context) error {
 		UserID: user.ID,
 		Text:   request.Text,
 	}
-	ressmsTemplate, err := smsh.smsTemplateUseCase.CreateSMSTemplate(smsTemplate)
+	ressmsTemplate, err := smsh.smsTemplateService.CreateSMSTemplate(smsTemplate)
 	if err != nil {
-		fmt.Printf("err: %v\n", err)
+
 		return c.JSON(http.StatusInternalServerError, Response{Message: "Cant create sms template"})
 	}
 
 	return c.JSON(http.StatusOK, SmsTemplateResponse{Message: "Created", SmsTemplateID: ressmsTemplate.ID})
 }
 
-func (smsh *SmsTemplateHandler) SmsTemplateList(c echo.Context) error {
+func (smsh smsTemplateHandler) SmsTemplateList(c echo.Context) error {
 	user := c.Get("user").(domain.User)
 
-	templates, err := smsh.smsTemplateUseCase.GetByUserId(user.ID)
+	templates, err := smsh.smsTemplateService.GetSMSTemplateByUserId(user.ID)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, Response{Message: "Cant get sms template list"})
 	}
@@ -129,7 +138,7 @@ func (smsh *SmsTemplateHandler) SmsTemplateList(c echo.Context) error {
 	return c.JSON(http.StatusOK, response)
 }
 
-func (smsh *SmsTemplateHandler) NewSingleSmsWithTemplate(c echo.Context) error {
+func (smsh smsTemplateHandler) NewSingleSmsWithTemplate(c echo.Context) error {
 	user := c.Get("user").(domain.User)
 	var request SingleSmsWithTemplateRequest
 
@@ -146,7 +155,7 @@ func (smsh *SmsTemplateHandler) NewSingleSmsWithTemplate(c echo.Context) error {
 	}
 
 	// Check the template
-	template, err := smsh.smsTemplateUseCase.GetById(request.TemplateId)
+	template, err := smsh.smsTemplateService.GetSMSTemplateById(request.TemplateId)
 	if err != nil || template.ID == 0 {
 		return c.JSON(http.StatusBadRequest, Response{Message: "Template not found"})
 	}
@@ -174,14 +183,14 @@ func (smsh *SmsTemplateHandler) NewSingleSmsWithTemplate(c echo.Context) error {
 
 	err = smsh.smsService.SingleSMS(smsHistoryRecord)
 	if err != nil {
-		fmt.Printf("err: %v\n", err)
+
 		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't send sms " + err.Error()})
 	}
 
 	return c.JSON(http.StatusOK, Response{Message: "SMS Sent"})
 }
 
-func (smsh *SmsTemplateHandler) NewSingleSmsWithUsernameWithTemplate(c echo.Context) error {
+func (smsh smsTemplateHandler) NewSingleSmsWithUsernameWithTemplate(c echo.Context) error {
 	user := c.Get("user").(domain.User)
 	var request SingleSmsWithUsernameWithTemplateRequest
 
@@ -198,7 +207,7 @@ func (smsh *SmsTemplateHandler) NewSingleSmsWithUsernameWithTemplate(c echo.Cont
 	}
 
 	// Check the template
-	template, err := smsh.smsTemplateUseCase.GetById(request.TemplateId)
+	template, err := smsh.smsTemplateService.GetSMSTemplateById(request.TemplateId)
 	if err != nil || template.ID == 0 {
 		return c.JSON(http.StatusBadRequest, Response{Message: "Template not found"})
 	}
@@ -213,7 +222,7 @@ func (smsh *SmsTemplateHandler) NewSingleSmsWithUsernameWithTemplate(c echo.Cont
 	}
 
 	// Check the phone book
-	phoneBook, err := smsh.phoneBookService.GetById(request.PhoneBookId)
+	phoneBook, err := smsh.phoneBookService.GetPhoneBookById(request.PhoneBookId)
 	if err != nil || phoneBook.ID <= 0 {
 		return c.JSON(http.StatusBadRequest, Response{Message: "phone book not found"})
 	}
@@ -244,14 +253,14 @@ func (smsh *SmsTemplateHandler) NewSingleSmsWithUsernameWithTemplate(c echo.Cont
 
 	err = smsh.smsService.SingleSMS(smsHistoryRecord)
 	if err != nil {
-		fmt.Printf("err: %v\n", err)
+
 		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't send sms " + err.Error()})
 	}
 
 	return c.JSON(http.StatusOK, Response{Message: "SMS Sent"})
 }
 
-func (smsh *SmsTemplateHandler) NewSinglePeriodSmsWithTemplate(c echo.Context) error {
+func (smsh smsTemplateHandler) NewSinglePeriodSmsWithTemplate(c echo.Context) error {
 	user := c.Get("user").(domain.User)
 	var request SinglePeriodSmsWithTemplateRequest
 
@@ -268,7 +277,7 @@ func (smsh *SmsTemplateHandler) NewSinglePeriodSmsWithTemplate(c echo.Context) e
 	}
 
 	// Check the template
-	template, err := smsh.smsTemplateUseCase.GetById(request.TemplateId)
+	template, err := smsh.smsTemplateService.GetSMSTemplateById(request.TemplateId)
 	if err != nil || template.ID == 0 {
 		return c.JSON(http.StatusBadRequest, Response{Message: "Template not found"})
 	}
@@ -291,7 +300,7 @@ func (smsh *SmsTemplateHandler) NewSinglePeriodSmsWithTemplate(c echo.Context) e
 	return c.JSON(http.StatusOK, Response{Message: "SMS Sent"})
 }
 
-func (smsh *SmsTemplateHandler) NewSinglePeriodSmsWithUsernameWithTemplate(c echo.Context) error {
+func (smsh smsTemplateHandler) NewSinglePeriodSmsWithUsernameWithTemplate(c echo.Context) error {
 	user := c.Get("user").(domain.User)
 	var request SinglePeriodSmsWithUsernameWithTemplateRequest
 
@@ -308,7 +317,7 @@ func (smsh *SmsTemplateHandler) NewSinglePeriodSmsWithUsernameWithTemplate(c ech
 	}
 
 	// Check the template
-	template, err := smsh.smsTemplateUseCase.GetById(request.TemplateId)
+	template, err := smsh.smsTemplateService.GetSMSTemplateById(request.TemplateId)
 	if err != nil || template.ID == 0 {
 		return c.JSON(http.StatusBadRequest, Response{Message: "Template not found"})
 	}
@@ -323,7 +332,7 @@ func (smsh *SmsTemplateHandler) NewSinglePeriodSmsWithUsernameWithTemplate(c ech
 	}
 
 	// Check the phone book
-	phoneBook, err := smsh.phoneBookService.GetById(request.PhoneBookId)
+	phoneBook, err := smsh.phoneBookService.GetPhoneBookById(request.PhoneBookId)
 	if err != nil || phoneBook.ID <= 0 {
 		return c.JSON(http.StatusBadRequest, Response{Message: "phone book not found"})
 	}

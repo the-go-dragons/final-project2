@@ -7,7 +7,7 @@ import (
 	"github.com/the-go-dragons/final-project2/internal/domain"
 )
 
-func (uh *UserHandler) Logout(c echo.Context) error {
+func (uh userHandler) Logout(c echo.Context) error {
 	user := c.Get("user").(domain.User)
 
 	// update IsLoginRequired field in user

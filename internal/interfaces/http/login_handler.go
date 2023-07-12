@@ -43,7 +43,7 @@ func GenerateToken(user domain.User) (string, error) {
 	return tokenString, nil
 }
 
-func (uh *UserHandler) Login(c echo.Context) error {
+func (uh userHandler) Login(c echo.Context) error {
 	var request LoginRequest
 	var user domain.User
 

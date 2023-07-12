@@ -44,7 +44,7 @@ func AddNewJob(
 	senderNumber string,
 	receiverNumbers string,
 	repetitionCount uint,
-	smsS *usecase.SmsServiceImpl,
+	smsS usecase.SMSService,
 ) (int, error) {
 	if CronJobRunner == nil {
 		NewCronJobRunner()

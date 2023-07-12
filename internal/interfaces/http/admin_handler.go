@@ -9,18 +9,24 @@ import (
 	"github.com/the-go-dragons/final-project2/internal/usecase"
 )
 
-type AdminHandler struct {
+type AdminHandler interface {
+	DisableUser(echo.Context) error
+	ChangePricing(echo.Context) error
+	GetSMSHistoryByUserId(echo.Context) error
+}
+
+type adminHandler struct {
 	userUsecase  usecase.UserUsecase
 	priceUsecase usecase.PriceService
-	smsService   usecase.SmsServiceImpl
+	smsService   usecase.SMSService
 }
 
 func NewAdminHandler(
 	userUsecase usecase.UserUsecase,
 	priceUsecase usecase.PriceService,
-	smsService usecase.SmsServiceImpl,
-) *AdminHandler {
-	return &AdminHandler{
+	smsService usecase.SMSService,
+) AdminHandler {
+	return adminHandler{
 		userUsecase:  userUsecase,
 		priceUsecase: priceUsecase,
 		smsService:   smsService,
@@ -41,7 +47,7 @@ type SMSHistoryResponse struct {
 	SMSHistories []domain.SMSHistory `json:"sms_histories"`
 }
 
-func (ah *AdminHandler) DisableUser(c echo.Context) error {
+func (ah adminHandler) DisableUser(c echo.Context) error {
 	admin := c.Get("user").(domain.User)
 
 	// Check the user id from url params
@@ -70,7 +76,7 @@ func (ah *AdminHandler) DisableUser(c echo.Context) error {
 	return c.JSON(http.StatusOK, Response{Message: "User disabled successfully"})
 }
 
-func (ah *AdminHandler) ChangePricing(c echo.Context) error {
+func (ah adminHandler) ChangePricing(c echo.Context) error {
 	_ = c.Get("user").(domain.User)
 	var request ChangePricingRequest
 
@@ -96,7 +102,7 @@ func (ah *AdminHandler) ChangePricing(c echo.Context) error {
 	return c.JSON(http.StatusOK, ChangePricingResponse{price})
 }
 
-func (ah *AdminHandler) GetSMSHistoryByUserId(c echo.Context) error {
+func (ah adminHandler) GetSMSHistoryByUserId(c echo.Context) error {
 	_ = c.Get("user").(domain.User)
 
 	// Check the user id from url params

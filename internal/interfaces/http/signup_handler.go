@@ -1,7 +1,6 @@
 package http
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -13,7 +12,7 @@ type SignupRequest struct {
 	Password string `json:"password"`
 }
 
-func (uh *UserHandler) Signup(c echo.Context) error {
+func (uh userHandler) Signup(c echo.Context) error {
 	var request SignupRequest
 
 	// Check the body data
@@ -38,7 +37,7 @@ func (uh *UserHandler) Signup(c echo.Context) error {
 
 	_, err = uh.userUsecase.CreateUser(user)
 	if err != nil {
-		fmt.Printf("err: %v\n", err)
+
 		return c.JSON(http.StatusInternalServerError, Response{Message: "Cant create user"})
 	}
 

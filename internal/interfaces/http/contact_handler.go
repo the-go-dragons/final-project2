@@ -1,7 +1,6 @@
 package http
 
 import (
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -10,7 +9,13 @@ import (
 	"github.com/the-go-dragons/final-project2/internal/usecase"
 )
 
-type ContactHandler struct {
+type ContactHandler interface {
+	CreateContact(c echo.Context) error
+	GetByPhoneBook(c echo.Context) error
+	DeleteContact(c echo.Context) error
+}
+
+type contactHandler struct {
 	contactService   usecase.ContactService
 	phoneBookService usecase.PhoneBookService
 }
@@ -24,13 +29,13 @@ func NewContactHandler(
 	contact usecase.ContactService,
 	phoneBookService usecase.PhoneBookService,
 ) ContactHandler {
-	return ContactHandler{
+	return contactHandler{
 		contactService:   contact,
 		phoneBookService: phoneBookService,
 	}
 }
 
-func (ch ContactHandler) CreateContact(c echo.Context) error {
+func (ch contactHandler) CreateContact(c echo.Context) error {
 	user := c.Get("user").(domain.User)
 	var request ContactData
 
@@ -53,7 +58,7 @@ func (ch ContactHandler) CreateContact(c echo.Context) error {
 	}
 
 	// Check the phone book
-	phoneBook, err := ch.phoneBookService.GetById(uint(phonebookId))
+	phoneBook, err := ch.phoneBookService.GetPhoneBookById(uint(phonebookId))
 	if err != nil || phoneBook.ID <= 0 {
 		return c.JSON(http.StatusBadRequest, Response{Message: "Phone book not found"})
 	}
@@ -79,14 +84,14 @@ func (ch ContactHandler) CreateContact(c echo.Context) error {
 
 	_, err = ch.contactService.CreateContact(dto)
 	if err != nil {
-		fmt.Printf("err: %v\n", err)
+
 		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't create number"})
 	}
 
 	return c.JSON(http.StatusOK, Response{Message: "Created"})
 }
 
-func (ch ContactHandler) GetByPhoneBook(c echo.Context) error {
+func (ch contactHandler) GetByPhoneBook(c echo.Context) error {
 	user := c.Get("user").(domain.User)
 
 	// Check the phonebookId from url params
@@ -96,7 +101,7 @@ func (ch ContactHandler) GetByPhoneBook(c echo.Context) error {
 	}
 
 	// Check the phone book
-	phoneBook, err := ch.phoneBookService.GetById(uint(phonebookId))
+	phoneBook, err := ch.phoneBookService.GetPhoneBookById(uint(phonebookId))
 	if err != nil || phoneBook.ID <= 0 {
 		return c.JSON(http.StatusBadRequest, Response{Message: "Phone book not found"})
 	}
@@ -123,7 +128,7 @@ func (ch ContactHandler) GetByPhoneBook(c echo.Context) error {
 	return c.JSON(http.StatusOK, response)
 }
 
-func (ch ContactHandler) DeleteContact(c echo.Context) error {
+func (ch contactHandler) DeleteContact(c echo.Context) error {
 	user := c.Get("user").(domain.User)
 	var request ContactData
 
@@ -149,7 +154,7 @@ func (ch ContactHandler) DeleteContact(c echo.Context) error {
 	}
 
 	// Check the phone book
-	phoneBook, err := ch.phoneBookService.GetById(uint(phonebookId))
+	phoneBook, err := ch.phoneBookService.GetPhoneBookById(uint(phonebookId))
 	if err != nil || phoneBook.ID <= 0 {
 		return c.JSON(http.StatusBadRequest, Response{Message: "Phone book not found"})
 	}

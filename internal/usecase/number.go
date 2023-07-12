@@ -7,48 +7,48 @@ import (
 	"github.com/the-go-dragons/final-project2/internal/interfaces/persistence"
 )
 
-type NumberService struct {
-	numberRepo       persistence.NumberRepository
-	walletRepo       persistence.WalletRepository
-	subscriptionRepo persistence.SubscriptionRepository
+type NumberService interface {
+	CreateNumber(domain.Number) (domain.Number, error)
+	GetNumberById(uint) (domain.Number, error)
+	BuyOrRentNumber(domain.Number, domain.User, domain.Wallet, uint32, time.Time) (bool, error)
+	GetNumberByPhone(string) (domain.Number, error)
+}
+
+type numberService struct {
+	numberRepository       persistence.NumberRepository
+	walletRepository       persistence.WalletRepository
+	subscriptionRepository persistence.SubscriptionRepository
 }
 
 func NewNumber(
-	numberRepo persistence.NumberRepository,
-	walletRepo persistence.WalletRepository,
-	subscriptionRepo persistence.SubscriptionRepository,
+	numberRepository persistence.NumberRepository,
+	walletRepository persistence.WalletRepository,
+	subscriptionRepository persistence.SubscriptionRepository,
 ) NumberService {
-	return NumberService{
-		numberRepo:       numberRepo,
-		walletRepo:       walletRepo,
-		subscriptionRepo: subscriptionRepo,
+	return numberService{
+		numberRepository:       numberRepository,
+		walletRepository:       walletRepository,
+		subscriptionRepository: subscriptionRepository,
 	}
 }
 
-type NewNumberPayload struct {
-	Phone string                `json:"phone"`
-	Price uint32                `json:"price"`
-	Type  domain.NumberTypeEnum `json:"type" `
+func (ns numberService) CreateNumber(input domain.Number) (domain.Number, error) {
+	return ns.numberRepository.Create(input)
 }
 
-func (n NumberService) Create(number NewNumberPayload) (domain.Number, error) {
-	numberRecord := domain.Number{
-		Phone:       number.Phone,
-		Type:        number.Type,
-		Price:       number.Price,
-		IsAvailable: true,
-	}
-
-	return n.numberRepo.Create(numberRecord)
+func (ns numberService) GetNumberById(id uint) (domain.Number, error) {
+	return ns.numberRepository.Get(id)
 }
 
-func (n NumberService) GetById(Id uint) (domain.Number, error) {
-	return n.numberRepo.Get(Id)
-}
-
-func (n NumberService) BuyOrRentNumber(number domain.Number, user domain.User, wallet domain.Wallet, totalPrice uint32, expirationDate time.Time) (bool, error) {
+func (ns numberService) BuyOrRentNumber(
+	number domain.Number,
+	user domain.User,
+	wallet domain.Wallet,
+	totalPrice uint32,
+	expirationDate time.Time,
+) (bool, error) {
 	wallet.Balance = wallet.Balance - uint(totalPrice)
-	_, err := n.walletRepo.Update(wallet)
+	_, err := ns.walletRepository.Update(wallet)
 
 	if err != nil {
 		return false, err
@@ -61,16 +61,18 @@ func (n NumberService) BuyOrRentNumber(number domain.Number, user domain.User, w
 		ExpirationDate: expirationDate,
 	}
 
-	_, err = n.subscriptionRepo.Create(subscription)
+	_, err = ns.subscriptionRepository.Create(subscription)
 
 	if err != nil {
 		return false, err
 	}
 
 	number.IsAvailable = false
-	n.numberRepo.Update(number)
-
-	// n.subscriptionRepo.Create()
+	ns.numberRepository.Update(number)
 
 	return true, nil
+}
+
+func (ns numberService) GetNumberByPhone(phone string) (domain.Number, error) {
+	return ns.numberRepository.GetByPhone(phone)
 }

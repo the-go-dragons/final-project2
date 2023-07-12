@@ -72,13 +72,13 @@ func routing(e *echo.Echo) {
 	smsHandler := handlers.NewSmsHandler(smsService, contactService, phoneBookService, wordService)
 
 	smsTemplateRepo := persistence.NewSmsTemplateRepository()
-	smsTemplateUsecase := usecase.NewSmsTemplateUsecase(smsTemplateRepo)
+	smsTemplateUsecase := usecase.NewSmsTemplateService(smsTemplateRepo)
 	smsTemplateHandler := handlers.NewSmsTemplateHandler(smsTemplateUsecase, smsService, contactService, phoneBookService)
 
 	priceRepo := persistence.NewPriceRepository()
 	priceUsecase := usecase.NewPriceService(priceRepo)
 
-	adminHandler := handlers.NewAdminHandler(*userUsecase, priceUsecase, smsService)
+	adminHandler := handlers.NewAdminHandler(userUsecase, priceUsecase, smsService)
 
 	e.POST("/signup", userHandler.Signup)
 	e.POST("/login", userHandler.Login)
@@ -95,10 +95,8 @@ func routing(e *echo.Echo) {
 	e.POST("/numbers/buy-rent", numberHandler.BuyOrRent, customeMiddleware.RequireAuth)
 
 	e.GET("/phonebook", phoneBookHandler.GetAll, customeMiddleware.RequireAuth)
-	e.GET("/phonebook/username", phoneBookHandler.GetByUserName, customeMiddleware.RequireAuth)
 	e.DELETE("/phonebook", phoneBookHandler.Delete, customeMiddleware.RequireAuth)
 	e.POST("/phonebook", phoneBookHandler.Create, customeMiddleware.RequireAuth)
-	e.PUT("/phonebook", phoneBookHandler.Edit, customeMiddleware.RequireAuth)
 
 	e.POST("/contact/:phonebookId", contactHandler.CreateContact, customeMiddleware.RequireAuth)
 	e.GET("/contact/:phonebookId", contactHandler.GetByPhoneBook, customeMiddleware.RequireAuth)
@@ -121,8 +119,7 @@ func routing(e *echo.Echo) {
 	e.GET("/admin/change-priceing", adminHandler.ChangePricing, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
 	e.GET("/admin/sms-report/:userId", adminHandler.GetSMSHistoryByUserId, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
 
-	e.POST("/inappropriate-word", wordHandler.Create, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
-	e.PUT("/inappropriate-word", wordHandler.Edit, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
+	e.POST("/inappropriate-word", wordHandler.CreateInappropriateWord, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
 	e.GET("/inappropriate-word", wordHandler.GetAll, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
 	e.DELETE("/inappropriate-word", wordHandler.Delete, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
 }

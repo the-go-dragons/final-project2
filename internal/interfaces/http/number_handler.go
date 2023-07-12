@@ -1,95 +1,101 @@
 package http
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 
-	"github.com/asaskevich/govalidator"
 	"github.com/labstack/echo/v4"
 	"github.com/the-go-dragons/final-project2/internal/domain"
 	"github.com/the-go-dragons/final-project2/internal/usecase"
 )
 
-type NumberHandler struct {
-	number *usecase.NumberService
-	wallet *usecase.WalletService
+type NumberHandler interface {
+	Create(echo.Context) error
+	BuyOrRent(echo.Context) error
 }
 
-type BuyNumberPayload struct {
+type numberHandler struct {
+	numberService usecase.NumberService
+	walletService usecase.WalletService
+}
+
+func NewNumberHandler(
+	numberService usecase.NumberService,
+	walletService usecase.WalletService,
+) NumberHandler {
+	return numberHandler{
+		numberService: numberService,
+		walletService: walletService,
+	}
+}
+
+type CreateNubmerRequest struct {
+	Phone string                `json:"phone"`
+	Price uint32                `json:"price"`
+	Type  domain.NumberTypeEnum `json:"type"`
+}
+
+type BuyNumberRequest struct {
 	NumberId uint `json:"numberId"`
 	Months   uint `json:"months"`
 }
 
-func NewNumberHandler(number usecase.NumberService, wallet usecase.WalletService) NumberHandler {
-	return NumberHandler{number: &number, wallet: &wallet}
-}
+func (nh numberHandler) Create(c echo.Context) error {
+	var request CreateNubmerRequest
 
-func (n NumberHandler) Create(c echo.Context) error {
-	var req usecase.NewNumberPayload
-	err := c.Bind(&req)
+	// Check the request body
+	err := c.Bind(&request)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, Error{Message: "Invalid number"})
+		return c.JSON(http.StatusBadRequest, Error{Message: "Invalid body request"})
+	}
+	if request.Phone == "" || request.Price == 0 || request.Type == 0 {
+		return c.JSON(http.StatusBadRequest, Error{Message: "Missing required fields"})
+	}
+	if CheckTheNumberFormat(request.Phone) != nil {
+		return c.JSON(http.StatusBadRequest, Error{Message: "Invalid phone number"})
 	}
 
-	if !govalidator.Matches(req.Phone, `^(?:\+98)?\d{6,}$`) {
-		return c.JSON(http.StatusBadRequest, Response{Message: "Invalid phone number"})
+	// Check number duplicatoin
+	number, err := nh.numberService.GetNumberByPhone(request.Phone)
+	if err == nil || number.ID != 0 {
+		return c.JSON(http.StatusBadRequest, Error{Message: "Phone number already exists"})
 	}
 
-	if !govalidator.IsIn(fmt.Sprintf("%d", req.Type), "1", "2") {
-		return c.JSON(http.StatusBadRequest, Response{Message: "Invalid number type"})
+	// Create the number
+	number = domain.Number{
+		Phone: request.Phone,
+		Price: request.Price,
+		Type:  request.Type,
 	}
-
-	if !govalidator.IsInt(fmt.Sprintf("%d", req.Price)) || req.Price == 0 {
-		return c.JSON(http.StatusBadRequest, Response{Message: "Invalid price"})
-	}
-
-	// TODO: Check number duplicatoin
-
-	payload := usecase.NewNumberPayload{
-		Phone: req.Phone,
-		Type:  req.Type,
-		Price: req.Price,
-	}
-
-	_, err = n.number.Create(payload)
-	if err != nil {
-		fmt.Printf("err: %v\n", err)
+	number, err = nh.numberService.CreateNumber(number)
+	if err != nil || number.ID == 0 {
 		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't create number"})
 	}
 
 	return c.JSON(http.StatusOK, Response{Message: "Created"})
 }
 
-func (n NumberHandler) BuyOrRent(c echo.Context) error {
-	var req BuyNumberPayload
-	err := c.Bind(&req)
+func (nh numberHandler) BuyOrRent(c echo.Context) error {
+	var request BuyNumberRequest
+	err := c.Bind(&request)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, Error{Message: "Invalid input"})
+		return c.JSON(http.StatusBadRequest, Error{Message: "Invalid body request"})
+	}
+	if request.NumberId == 0 {
+		return c.JSON(http.StatusBadRequest, Error{Message: "Missing required fields"})
 	}
 
-	if !govalidator.IsInt(fmt.Sprintf("%d", req.NumberId)) {
-		return c.JSON(http.StatusBadRequest, Response{Message: "Invalid number"})
+	number, err := nh.numberService.GetNumberById(request.NumberId)
+
+	if err != nil || number.ID == 0 {
+		return c.JSON(http.StatusInternalServerError, Response{Message: "Number not found"})
 	}
-
-	number, err := n.number.GetById(req.NumberId)
-
-	if err != nil {
-		fmt.Printf("err: %v\n", err)
-		return c.JSON(http.StatusInternalServerError, Response{Message: "No number found whit this information"})
-	}
-
-	fmt.Printf("number.IsAvailable: %v\n", number.IsAvailable)
 
 	if !number.IsAvailable {
-		return c.JSON(http.StatusBadRequest, Response{Message: "Number is not available for buy or rent"})
+		return c.JSON(http.StatusBadRequest, Response{Message: "Number is not available"})
 	}
 
-	if number.Type == 2 && !govalidator.IsInt(fmt.Sprintf("%d", req.Months)) {
-		return c.JSON(http.StatusBadRequest, Response{Message: "Invalid months"})
-	}
-
-	if number.Type == 2 && req.Months == 0 {
+	if number.Type == 2 && request.Months == 0 {
 		return c.JSON(http.StatusBadRequest, Response{Message: "Invalid months"})
 	}
 
@@ -99,16 +105,15 @@ func (n NumberHandler) BuyOrRent(c echo.Context) error {
 	if number.Type == 1 {
 		totalPrice = number.Price
 	} else {
-		totalPrice = number.Price * uint32(req.Months)
-		expirationDate = time.Now().AddDate(0, int(req.Months), 0)
+		totalPrice = number.Price * uint32(request.Months)
+		expirationDate = time.Now().AddDate(0, int(request.Months), 0)
 	}
 
 	user := c.Get("user").(domain.User)
 
-	userWallet, err := n.wallet.GetByUserId(user.ID)
+	userWallet, err := nh.walletService.GetByUserId(user.ID)
 
 	if err != nil {
-		fmt.Printf("err: %v\n", err)
 		return c.JSON(http.StatusInternalServerError, Response{Message: "No wallet found this user"})
 	}
 
@@ -116,12 +121,10 @@ func (n NumberHandler) BuyOrRent(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, Response{Message: "your wallet has not enough balance to pay"})
 	}
 
-	_, err = n.number.BuyOrRentNumber(number, user, userWallet, totalPrice, expirationDate)
+	_, err = nh.numberService.BuyOrRentNumber(number, user, userWallet, totalPrice, expirationDate)
 
-	// _, err = n.number.Create(payload)
 	if err != nil {
-		fmt.Printf("err: %v\n", err)
-		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't create user"})
+		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't add number: " + err.Error()})
 	}
 
 	return c.JSON(http.StatusOK, Response{Message: "Created"})

@@ -1,80 +1,70 @@
 package usecase
 
 import (
-	"time"
-
 	"github.com/the-go-dragons/final-project2/internal/domain"
 	"github.com/the-go-dragons/final-project2/internal/interfaces/persistence"
 )
 
-type PhoneBookService struct {
+type PhoneBookService interface {
+	CreatePhoneBook(domain.PhoneBook) (domain.PhoneBook, error)
+	GetPhoneBookById(uint) (domain.PhoneBook, error)
+	GetAllPhoneBooksByUserId(uint) ([]domain.PhoneBook, error)
+	GetPhoneBookByUserName(string) ([]domain.PhoneBook, error)
+	UpdatePhoneBook(domain.PhoneBook) (domain.PhoneBook, error)
+	DeletePhoneBook(uint) error
+}
+
+type phoneBookService struct {
 	phonebookRepo persistence.PhoneBookRepository
 	userRepo      persistence.UserRepository
 }
 
-func NewPhoneBook(phonebookRepo persistence.PhoneBookRepository, userRepo persistence.UserRepository) PhoneBookService {
-	return PhoneBookService{
+func NewPhoneBook(
+	phonebookRepo persistence.PhoneBookRepository,
+	userRepo persistence.UserRepository,
+) PhoneBookService {
+	return phoneBookService{
 		phonebookRepo: phonebookRepo,
 		userRepo:      userRepo,
 	}
 }
 
-type PhoneBookDto struct {
-	ID          uint      `json:"id"`
-	UserID      uint      `json:"userId"`
-	Name        string    `json:"name"`
-	Description string    `json:"description"`
-	CreatedAt   time.Time `json:"createdAt"`
-	UpdatedAt   time.Time `json:"updatedAt"`
+func (pbs phoneBookService) CreatePhoneBook(input domain.PhoneBook) (domain.PhoneBook, error) {
+	// user, err := pbs.userRepo.GetById(input.UserID)
+	// if err != nil {
+	// 	return domain.PhoneBook{}, err
+	// }
+	// input.User = user
+
+	return pbs.phonebookRepo.Create(input)
 }
 
-func (n PhoneBookService) Create(dto PhoneBookDto) (domain.PhoneBook, error) {
-	user, err := n.userRepo.GetById(dto.UserID)
-	if err != nil {
-		return domain.PhoneBook{}, err
-	}
-	phonebookRecord := domain.PhoneBook{
-		UserID:      dto.UserID,
-		User:        user,
-		Name:        dto.Name,
-		Description: dto.Description,
-	}
-
-	return n.phonebookRepo.Create(phonebookRecord)
+func (pbs phoneBookService) GetPhoneBookById(id uint) (domain.PhoneBook, error) {
+	return pbs.phonebookRepo.GetById(id)
 }
 
-func (n PhoneBookService) GetById(Id uint) (domain.PhoneBook, error) {
-	return n.phonebookRepo.GetById(Id)
+func (pbs phoneBookService) GetAllPhoneBooksByUserId(userId uint) ([]domain.PhoneBook, error) {
+	return pbs.phonebookRepo.GetAllByUserId(userId)
 }
 
-func (n PhoneBookService) GetAll() ([]domain.PhoneBook, error) {
-	return n.phonebookRepo.GetAll()
-}
-
-func (n PhoneBookService) GetByUserName(username string) ([]domain.PhoneBook, error) {
-	user, err := n.userRepo.GeByUsername(username)
+func (pbs phoneBookService) GetPhoneBookByUserName(username string) ([]domain.PhoneBook, error) {
+	user, err := pbs.userRepo.GeByUsername(username)
 	if err != nil {
 		return make([]domain.PhoneBook, 0), err
 	}
-	return n.phonebookRepo.GetByUser(&user)
+	return pbs.phonebookRepo.GetByUser(user)
 }
 
-func (n PhoneBookService) Edit(dto PhoneBookDto) (domain.PhoneBook, error) {
-	user, err := n.userRepo.GetById(dto.UserID)
-	if err != nil {
-		return domain.PhoneBook{}, err
-	}
-	phonebookRecord := domain.PhoneBook{
-		// ID:          dto.ID,
-		UserID:      dto.UserID,
-		Name:        dto.Name,
-		User:        user,
-		Description: dto.Description,
-	}
+func (pbs phoneBookService) UpdatePhoneBook(input domain.PhoneBook) (domain.PhoneBook, error) {
+	// user, err := pbs.userRepo.GetById(input.UserID)
+	// if err != nil {
+	// 	return domain.PhoneBook{}, err
+	// }
+	// input.User = user
 
-	return n.phonebookRepo.Update(phonebookRecord)
+	return pbs.phonebookRepo.Update(input)
 }
 
-func (n PhoneBookService) Delete(Id uint) error {
-	return n.phonebookRepo.Delete(Id)
+func (pbs phoneBookService) DeletePhoneBook(Id uint) error {
+	return pbs.phonebookRepo.Delete(Id)
 }

@@ -10,8 +10,8 @@ type PhoneBookRepository interface {
 	Update(domain.PhoneBook) (domain.PhoneBook, error)
 	GetById(uint) (domain.PhoneBook, error)
 	Delete(uint) error
-	GetAll() ([]domain.PhoneBook, error)
-	GetByUser(*domain.User) ([]domain.PhoneBook, error)
+	GetAllByUserId(uint) ([]domain.PhoneBook, error)
+	GetByUser(domain.User) ([]domain.PhoneBook, error)
 }
 
 type phoneBookRepository struct {
@@ -61,17 +61,17 @@ func (phr phoneBookRepository) Delete(id uint) error {
 	return tx.Error
 }
 
-func (phr phoneBookRepository) GetAll() ([]domain.PhoneBook, error) {
+func (phr phoneBookRepository) GetAllByUserId(userId uint) ([]domain.PhoneBook, error) {
 	var phonebooks []domain.PhoneBook
 	db, _ := database.GetDatabaseConnection()
 	db = db.Model(&phonebooks)
 
-	tx := db.Debug().Find(&phonebooks)
+	tx := db.Where("user_id = ?", userId).Find(&phonebooks)
 
 	return phonebooks, tx.Error
 }
 
-func (phr phoneBookRepository) GetByUser(user *domain.User) ([]domain.PhoneBook, error) {
+func (phr phoneBookRepository) GetByUser(user domain.User) ([]domain.PhoneBook, error) {
 	var phonebooks []domain.PhoneBook
 	db, _ := database.GetDatabaseConnection()
 
