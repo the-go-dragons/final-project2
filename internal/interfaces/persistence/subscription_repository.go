@@ -6,58 +6,46 @@ import (
 )
 
 type SubscriptionRepository interface {
-	Create(input domain.Subscription) (domain.Subscription, error)
+	Create(domain.Subscription) (domain.Subscription, error)
 	GetAll() ([]domain.Subscription, error)
-	GetByUserId(id uint) (domain.Subscription, error)
-	GetByNumber(number domain.Number) (domain.Subscription, error)
+	GetByUserId(uint) (domain.Subscription, error)
+	GetByNumber(domain.Number) (domain.Subscription, error)
 }
 
-type SubscriptionRepositoryImpl struct {
+type subscriptionRepository struct {
 }
 
 func NewSubscriptionRepository() SubscriptionRepository {
-	return SubscriptionRepositoryImpl{}
+	return subscriptionRepository{}
 }
 
-func (n SubscriptionRepositoryImpl) Create(input domain.Subscription) (domain.Subscription, error) {
+func (n subscriptionRepository) Create(input domain.Subscription) (domain.Subscription, error) {
 	db, _ := database.GetDatabaseConnection()
 	tx := db.Debug().Create(&input)
 
-	if tx.Error != nil {
-		return input, tx.Error
-	}
-
-	return input, nil
+	return input, tx.Error
 }
 
-func (n SubscriptionRepositoryImpl) GetAll() ([]domain.Subscription, error) {
+func (n subscriptionRepository) GetAll() ([]domain.Subscription, error) {
 	db, _ := database.GetDatabaseConnection()
 
 	var subscriptions []domain.Subscription
 
 	tx := db.Preload("User").Preload("Number").Find(&subscriptions)
 
-	if tx.Error != nil {
-		return nil, tx.Error
-	}
-
-	return subscriptions, nil
+	return subscriptions, tx.Error
 }
 
-func (a SubscriptionRepositoryImpl) GetByUserId(id uint) (domain.Subscription, error) {
+func (a subscriptionRepository) GetByUserId(id uint) (domain.Subscription, error) {
 	var wallet domain.Subscription
 	db, _ := database.GetDatabaseConnection()
 
 	tx := db.Preload("User").Preload("Number").Where("user_id = ?", id).First(&wallet)
 
-	if err := tx.Error; err != nil {
-		return wallet, err
-	}
-
-	return wallet, nil
+	return wallet, tx.Error
 }
 
-func (a SubscriptionRepositoryImpl) GetByNumber(number domain.Number) (domain.Subscription, error) {
+func (a subscriptionRepository) GetByNumber(number domain.Number) (domain.Subscription, error) {
 	var subscription domain.Subscription
 	db, _ := database.GetDatabaseConnection()
 
@@ -65,9 +53,5 @@ func (a SubscriptionRepositoryImpl) GetByNumber(number domain.Number) (domain.Su
 		// Where("expiration_date > ", time.Now()).
 		First(&subscription)
 
-	if err := tx.Error; err != nil {
-		return subscription, err
-	}
-
-	return subscription, nil
+	return subscription, tx.Error
 }

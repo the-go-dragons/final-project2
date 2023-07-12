@@ -6,47 +6,39 @@ import (
 )
 
 type ContactRepository interface {
-	Create(input domain.Contact) (domain.Contact, error)
-	GetById(id uint) (domain.Contact, error)
-	Delete(id uint) error
-	GetByPhoneBookId(phoneBookId uint) ([]domain.Contact, error)
-	GetByUsername(username string) (domain.Contact, error)
-	GetByPhone(phone string) (domain.Contact, error)
-	GetByListOfPhoneBook([]uint) ([]domain.Contact, error)
+	Create(domain.Contact) (domain.Contact, error)
+	GetById(uint) (domain.Contact, error)
+	Delete(uint) error
+	GetByPhoneBookId(uint) ([]domain.Contact, error)
+	GetByOfPhoneBookIds([]uint) ([]domain.Contact, error)
+	GetByUsername(string) (domain.Contact, error)
+	GetByPhone(string) (domain.Contact, error)
 }
 
-type ContactRepositoryImpl struct {
+type contactRepository struct {
 }
 
 func NewContactRepository() ContactRepository {
-	return ContactRepositoryImpl{}
+	return contactRepository{}
 }
 
-func (cr ContactRepositoryImpl) Create(input domain.Contact) (domain.Contact, error) {
+func (cr contactRepository) Create(input domain.Contact) (domain.Contact, error) {
 	db, _ := database.GetDatabaseConnection()
 	tx := db.Debug().Create(&input)
 
-	if tx.Error != nil {
-		return input, tx.Error
-	}
-
-	return input, nil
+	return input, tx.Error
 }
 
-func (cr ContactRepositoryImpl) GetById(id uint) (domain.Contact, error) {
+func (cr contactRepository) GetById(id uint) (domain.Contact, error) {
 	var Contact domain.Contact
 	db, _ := database.GetDatabaseConnection()
 
 	tx := db.First(&Contact, id)
 
-	if err := tx.Error; err != nil {
-		return Contact, err
-	}
-
-	return Contact, nil
+	return Contact, tx.Error
 }
 
-func (cr ContactRepositoryImpl) Delete(id uint) error {
+func (cr contactRepository) Delete(id uint) error {
 	var Contact domain.Contact
 	db, _ := database.GetDatabaseConnection()
 
@@ -57,61 +49,42 @@ func (cr ContactRepositoryImpl) Delete(id uint) error {
 	}
 
 	tx = tx.Delete(&Contact)
-	if err := tx.Error; err != nil {
-		return err
-	}
 
-	return nil
+	return tx.Error
 }
 
-func (cr ContactRepositoryImpl) GetByPhoneBookId(phoneBookId uint) ([]domain.Contact, error) {
+func (cr contactRepository) GetByPhoneBookId(phoneBookId uint) ([]domain.Contact, error) {
 	var contacts []domain.Contact
 	db, _ := database.GetDatabaseConnection()
 
 	tx := db.Debug().Where("phone_book_id = ?", phoneBookId).Find(&contacts)
 
-	if err := tx.Error; err != nil {
-		return contacts, err
-	}
-
-	return contacts, nil
+	return contacts, tx.Error
 }
 
-func (cr ContactRepositoryImpl) GetByUsername(username string) (domain.Contact, error) {
-	var contact domain.Contact
-	db, _ := database.GetDatabaseConnection()
-
-	tx := db.Debug().Where("username = ?", username).Find(&contact)
-
-	if err := tx.Error; err != nil {
-		return contact, err
-	}
-
-	return contact, nil
-}
-
-func (cr ContactRepositoryImpl) GetByPhone(phone string) (domain.Contact, error) {
-	var contact domain.Contact
-	db, _ := database.GetDatabaseConnection()
-
-	tx := db.Debug().Where("phone = ?", phone).Find(&contact)
-
-	if err := tx.Error; err != nil {
-		return contact, err
-	}
-
-	return contact, nil
-}
-
-func (cr ContactRepositoryImpl) GetByListOfPhoneBook(phoneBookIds []uint) ([]domain.Contact, error) {
+func (cr contactRepository) GetByOfPhoneBookIds(phoneBookIds []uint) ([]domain.Contact, error) {
 	var contacts []domain.Contact
 	db, _ := database.GetDatabaseConnection()
 
 	tx := db.Debug().Where("phone_book_id in ?", phoneBookIds).Distinct().Find(&contacts)
 
-	if err := tx.Error; err != nil {
-		return contacts, err
-	}
+	return contacts, tx.Error
+}
 
-	return contacts, nil
+func (cr contactRepository) GetByUsername(username string) (domain.Contact, error) {
+	var contact domain.Contact
+	db, _ := database.GetDatabaseConnection()
+
+	tx := db.Debug().Where("username = ?", username).First(&contact)
+
+	return contact, tx.Error
+}
+
+func (cr contactRepository) GetByPhone(phone string) (domain.Contact, error) {
+	var contact domain.Contact
+	db, _ := database.GetDatabaseConnection()
+
+	tx := db.Debug().Where("phone = ?", phone).First(&contact)
+
+	return contact, tx.Error
 }

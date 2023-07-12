@@ -10,29 +10,27 @@ type PriceRepository interface {
 	Update(domain.Price) (domain.Price, error)
 }
 
-type priceRepositoryImpl struct {
+type priceRepository struct {
 }
 
 func NewPriceRepository() PriceRepository {
-	return priceRepositoryImpl{}
+	return priceRepository{}
 }
 
-func (cr priceRepositoryImpl) SingltonCreate() (domain.Price, error) {
+func (cr priceRepository) SingltonCreate() (domain.Price, error) {
 	db, _ := database.GetDatabaseConnection()
 	input := domain.Price{}
-	db.Where("id = ?", 1).First(&input)
+	tx := db.Where("id = ?", 1).First(&input)
 	if input.ID == 0 {
-		tx := db.Debug().Create(&input)
-
-		if tx.Error != nil {
-			return input, tx.Error
-		}
+		tx = db.Debug().Create(&domain.Price{})
 	}
-	return input, nil
+	return input, tx.Error
 }
 
-func (cr priceRepositoryImpl) Update(input domain.Price) (domain.Price, error) {
+func (cr priceRepository) Update(input domain.Price) (domain.Price, error) {
 	db, _ := database.GetDatabaseConnection()
-	db.Save(&input)
-	return input, nil
+
+	tx := db.Save(&input)
+
+	return input, tx.Error
 }

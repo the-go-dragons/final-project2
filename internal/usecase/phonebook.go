@@ -12,10 +12,10 @@ type PhoneBookService struct {
 	userRepo      persistence.UserRepository
 }
 
-func NewPhoneBook(phonebookRepo persistence.PhoneBookRepository, userRepo *persistence.UserRepository) PhoneBookService {
+func NewPhoneBook(phonebookRepo persistence.PhoneBookRepository, userRepo persistence.UserRepository) PhoneBookService {
 	return PhoneBookService{
 		phonebookRepo: phonebookRepo,
-		userRepo:      *userRepo,
+		userRepo:      userRepo,
 	}
 }
 
@@ -35,7 +35,7 @@ func (n PhoneBookService) Create(dto PhoneBookDto) (domain.PhoneBook, error) {
 	}
 	phonebookRecord := domain.PhoneBook{
 		UserID:      dto.UserID,
-		User:        *user,
+		User:        user,
 		Name:        dto.Name,
 		Description: dto.Description,
 	}
@@ -56,7 +56,7 @@ func (n PhoneBookService) GetByUserName(username string) ([]domain.PhoneBook, er
 	if err != nil {
 		return make([]domain.PhoneBook, 0), err
 	}
-	return n.phonebookRepo.GetByUser(user)
+	return n.phonebookRepo.GetByUser(&user)
 }
 
 func (n PhoneBookService) Edit(dto PhoneBookDto) (domain.PhoneBook, error) {
@@ -68,7 +68,7 @@ func (n PhoneBookService) Edit(dto PhoneBookDto) (domain.PhoneBook, error) {
 		// ID:          dto.ID,
 		UserID:      dto.UserID,
 		Name:        dto.Name,
-		User:        *user,
+		User:        user,
 		Description: dto.Description,
 	}
 

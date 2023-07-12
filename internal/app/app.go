@@ -68,7 +68,7 @@ func routing(e *echo.Echo) {
 	wordHandler := handlers.NewInappropriateWordHandler(wordService)
 
 	smsRepository := persistence.NewSmsHistoryRepository()
-	smsService := usecase.NewSmsService(smsRepository, *userRepo, phonebookRepo, numberRepo, subscrptionRepo, contactRepo)
+	smsService := usecase.NewSmsService(smsRepository, userRepo, phonebookRepo, numberRepo, subscrptionRepo, contactRepo)
 	smsHandler := handlers.NewSmsHandler(smsService, contactService, phoneBookService, wordService)
 
 	smsTemplateRepo := persistence.NewSmsTemplateRepository()

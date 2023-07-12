@@ -22,7 +22,7 @@ type LoginResponse struct {
 	Token   string `json:"token"`
 }
 
-func GenerateToken(user *domain.User) (string, error) {
+func GenerateToken(user domain.User) (string, error) {
 	expirationHoursCofig := config.Config.Jwt.Token.Expire.Hours
 	JwtTokenSecretConfig := config.Config.Jwt.Token.Secret.Key
 
@@ -45,7 +45,7 @@ func GenerateToken(user *domain.User) (string, error) {
 
 func (uh *UserHandler) Login(c echo.Context) error {
 	var request LoginRequest
-	var user *domain.User
+	var user domain.User
 
 	// Check the body data
 	err := c.Bind(&request)

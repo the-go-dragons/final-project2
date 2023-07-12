@@ -36,7 +36,7 @@ func (uh *UserHandler) Signup(c echo.Context) error {
 		Password: request.Password,
 	}
 
-	_, err = uh.userUsecase.CreateUser(&user)
+	_, err = uh.userUsecase.CreateUser(user)
 	if err != nil {
 		fmt.Printf("err: %v\n", err)
 		return c.JSON(http.StatusInternalServerError, Response{Message: "Cant create user"})

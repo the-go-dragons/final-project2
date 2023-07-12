@@ -82,7 +82,7 @@ func (s SmsServiceImpl) GetSMSHistoryByUserId(userId uint) ([]domain.SMSHistory,
 }
 
 func (s SmsServiceImpl) SendToPhonebooks(smsDto SmsPhonebookDto) error {
-	contacts, err := s.contactRepo.GetByListOfPhoneBook(smsDto.PhoneBookdIds)
+	contacts, err := s.contactRepo.GetByOfPhoneBookIds(smsDto.PhoneBookdIds)
 
 	if err != nil {
 		return err

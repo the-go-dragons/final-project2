@@ -10,13 +10,13 @@ import (
 )
 
 type UserUsecase struct {
-	userRepository   *persistence.UserRepository
+	userRepository   persistence.UserRepository
 	walletRepository persistence.WalletRepository
 	numberRepository persistence.NumberRepository
 	subscriptionRepo persistence.SubscriptionRepository
 }
 
-func NewUserUsecase(repository *persistence.UserRepository,
+func NewUserUsecase(repository persistence.UserRepository,
 	walletRepository persistence.WalletRepository,
 	numberRepository persistence.NumberRepository,
 	subscriptionRepo persistence.SubscriptionRepository,
@@ -29,14 +29,14 @@ func NewUserUsecase(repository *persistence.UserRepository,
 	}
 }
 
-func (uu *UserUsecase) CreateUser(user *domain.User) (*domain.User, error) {
+func (uu *UserUsecase) CreateUser(user domain.User) (domain.User, error) {
 	// Hash the password
 	encryptedPassword, err := bcrypt.GenerateFromPassword(
 		[]byte(user.Password),
 		bcrypt.DefaultCost,
 	)
 	if err != nil {
-		return nil, errors.New("cant hash password")
+		return user, errors.New("cant hash password")
 	}
 	user.Password = string(encryptedPassword)
 
@@ -51,7 +51,7 @@ func (uu *UserUsecase) CreateUser(user *domain.User) (*domain.User, error) {
 	createdUser, err := uu.userRepository.Create(user)
 
 	if err != nil {
-		return nil, err
+		return user, err
 	}
 
 	wallet := domain.Wallet{
@@ -64,35 +64,35 @@ func (uu *UserUsecase) CreateUser(user *domain.User) (*domain.User, error) {
 	return createdUser, err
 }
 
-func (uu *UserUsecase) GetUserById(id uint) (*domain.User, error) {
+func (uu *UserUsecase) GetUserById(id uint) (domain.User, error) {
 	return uu.userRepository.GetById(id)
 }
 
-func (uu *UserUsecase) GetAll() (*[]domain.User, error) {
+func (uu *UserUsecase) GetAll() ([]domain.User, error) {
 	return uu.userRepository.GetAll()
 }
 
-func (uu *UserUsecase) GetUserByUsername(username string) (*domain.User, error) {
+func (uu *UserUsecase) GetUserByUsername(username string) (domain.User, error) {
 	return uu.userRepository.GeByUsername(username)
 }
 
-func (uu *UserUsecase) Update(newUser *domain.User) (*domain.User, error) {
+func (uu *UserUsecase) Update(newUser domain.User) (domain.User, error) {
 	return uu.userRepository.Update(newUser)
 }
 
-func (uu *UserUsecase) UpdateDefaultNumber(userId int, numberId int) (*domain.User, error) {
+func (uu *UserUsecase) UpdateDefaultNumber(userId int, numberId int) (domain.User, error) {
 	user, err := uu.userRepository.GetById(uint(userId))
 	if err != nil {
-		return nil, UserNotFound{userId}
+		return user, UserNotFound{userId}
 	}
 	number, err := uu.numberRepository.Get(uint(numberId))
 	if err != nil {
-		return nil, InvalidNumber{int(numberId)}
+		return user, InvalidNumber{int(numberId)}
 	}
 	if number.Type != domain.Public {
 		sub, err := uu.subscriptionRepo.GetByUserId(uint(userId))
 		if err != nil || time.Now().After(sub.ExpirationDate) {
-			return nil, InvalidNumber{int(numberId)}
+			return user, InvalidNumber{int(numberId)}
 		}
 
 	}

@@ -6,23 +6,23 @@ import (
 )
 
 type SmsTemplateUsecase struct {
-	smsTemplateRepository *persistence.SmsTemplateRepository
+	smsTemplateRepository persistence.SmsTemplateRepository
 }
 
-func NewSmsTemplateUsecase(repository *persistence.SmsTemplateRepository) *SmsTemplateUsecase {
-	return &SmsTemplateUsecase{
+func NewSmsTemplateUsecase(repository persistence.SmsTemplateRepository) SmsTemplateUsecase {
+	return SmsTemplateUsecase{
 		smsTemplateRepository: repository,
 	}
 }
 
-func (uu *SmsTemplateUsecase) CreateSMSTemplate(smsTemplate *domain.SMSTemplate) (*domain.SMSTemplate, error) {
+func (uu SmsTemplateUsecase) CreateSMSTemplate(smsTemplate domain.SMSTemplate) (domain.SMSTemplate, error) {
 	return uu.smsTemplateRepository.Create(smsTemplate)
 }
 
-func (uu *SmsTemplateUsecase) GetById(id uint) (*domain.SMSTemplate, error) {
+func (uu SmsTemplateUsecase) GetById(id uint) (domain.SMSTemplate, error) {
 	return uu.smsTemplateRepository.GetById(id)
 }
 
-func (uu *SmsTemplateUsecase) GetByUserId(UserId uint) ([]domain.SMSTemplate, error) {
+func (uu SmsTemplateUsecase) GetByUserId(UserId uint) ([]domain.SMSTemplate, error) {
 	return uu.smsTemplateRepository.GetByUserId(UserId)
 }

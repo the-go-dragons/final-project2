@@ -12,7 +12,7 @@ func (uh *UserHandler) Logout(c echo.Context) error {
 
 	// update IsLoginRequired field in user
 	user.IsLoginRequired = true
-	uh.userUsecase.Update(&user)
+	uh.userUsecase.Update(user)
 
 	return c.JSON(http.StatusOK, Response{Message: "you logged out successfully"})
 }

@@ -7,83 +7,57 @@ import (
 )
 
 type WalletRepository interface {
-	Create(input domain.Wallet) (domain.Wallet, error)
-	Update(input domain.Wallet) (domain.Wallet, error)
-	Get(id uint) (domain.Wallet, error)
-	ChargeWallet(walletID uint, amount uint64) error
-	GetByUserId(id uint) (domain.Wallet, error)
+	Create(domain.Wallet) (domain.Wallet, error)
+	Update(domain.Wallet) (domain.Wallet, error)
+	Get(uint) (domain.Wallet, error)
+	ChargeWallet(uint, uint64) error
+	GetByUserId(uint) (domain.Wallet, error)
 }
 
-type WalletRepositoryImpl struct {
+type walletRepository struct {
 }
 
 func NewWalletRepository() WalletRepository {
-	return WalletRepositoryImpl{}
+	return walletRepository{}
 }
 
-func (a WalletRepositoryImpl) Create(input domain.Wallet) (domain.Wallet, error) {
+func (wr walletRepository) Create(input domain.Wallet) (domain.Wallet, error) {
 	db, _ := database.GetDatabaseConnection()
 	tx := db.Debug().Create(&input)
 
-	if tx.Error != nil {
-		return input, tx.Error
-	}
-
-	return input, nil
+	return input, tx.Error
 }
 
-func (a WalletRepositoryImpl) Update(input domain.Wallet) (domain.Wallet, error) {
-	var wallet domain.Wallet
-	db, err := database.GetDatabaseConnection()
-	if err != nil {
-		return wallet, err
-	}
-	_, err = a.Get(input.ID)
-	if err != nil {
-		return wallet, err
-	}
-	tx := db.Save(input)
-	if err := tx.Error; err != nil {
-		return wallet, err
-	}
+func (wr walletRepository) Update(input domain.Wallet) (domain.Wallet, error) {
+	db, _ := database.GetDatabaseConnection()
+	tx := db.Save(&input)
 
-	return wallet, nil
+	return input, tx.Error
 }
 
-func (a WalletRepositoryImpl) Get(id uint) (domain.Wallet, error) {
+func (wr walletRepository) Get(id uint) (domain.Wallet, error) {
 	var wallet domain.Wallet
 	db, _ := database.GetDatabaseConnection()
 
 	tx := db.First(&wallet, id)
 
-	if err := tx.Error; err != nil {
-		return wallet, err
-	}
-
-	return wallet, nil
+	return wallet, tx.Error
 }
 
-func (a WalletRepositoryImpl) GetByUserId(id uint) (domain.Wallet, error) {
+func (wr walletRepository) GetByUserId(id uint) (domain.Wallet, error) {
 	var wallet domain.Wallet
 	db, _ := database.GetDatabaseConnection()
 
 	tx := db.Where("user_id = ?", id).First(&wallet)
 
-	if err := tx.Error; err != nil {
-		return wallet, err
-	}
-
-	return wallet, nil
+	return wallet, tx.Error
 }
 
-func (a WalletRepositoryImpl) ChargeWallet(walletID uint, amount uint64) error {
+func (wr walletRepository) ChargeWallet(walletID uint, amount uint64) error {
 	var wallet domain.Wallet
 	db, _ := database.GetDatabaseConnection()
 
 	tx := db.Model(&wallet).Where("id = ?", walletID).Update("balance", gorm.Expr("balance + ?", amount))
 
-	if err := tx.Error; err != nil {
-		return err
-	}
-	return nil
+	return tx.Error
 }

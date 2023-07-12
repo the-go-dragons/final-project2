@@ -51,5 +51,5 @@ func (n ContactService) GetContactByPhone(phone string) (domain.Contact, error) 
 }
 
 func (n ContactService) GetContactsByListOfPhoneBook(phoneBookIds []uint) ([]domain.Contact, error) {
-	return n.contactRepo.GetByListOfPhoneBook(phoneBookIds)
+	return n.contactRepo.GetByOfPhoneBookIds(phoneBookIds)
 }

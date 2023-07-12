@@ -1,40 +1,43 @@
 package persistence
 
 import (
-	"errors"
-
 	"github.com/the-go-dragons/final-project2/internal/domain"
 	"github.com/the-go-dragons/final-project2/pkg/database"
 )
 
-type SmsTemplateRepository struct{}
-
-func NewSmsTemplateRepository() *SmsTemplateRepository {
-	return &SmsTemplateRepository{}
+type SmsTemplateRepository interface {
+	Create(domain.SMSTemplate) (domain.SMSTemplate, error)
+	GetById(uint) (domain.SMSTemplate, error)
+	GetByUserId(uint) ([]domain.SMSTemplate, error)
 }
 
-func (smsR *SmsTemplateRepository) Create(smsTemplate *domain.SMSTemplate) (*domain.SMSTemplate, error) {
+type smsTemplateRepository struct{}
+
+func NewSmsTemplateRepository() SmsTemplateRepository {
+	return &smsTemplateRepository{}
+}
+
+func (smsR smsTemplateRepository) Create(input domain.SMSTemplate) (domain.SMSTemplate, error) {
 	db, _ := database.GetDatabaseConnection()
-	result := db.Create(&smsTemplate)
-	if result.Error != nil {
-		return nil, result.Error
-	}
-	return smsTemplate, nil
+
+	tx := db.Create(&input)
+
+	return input, tx.Error
 }
 
-func (smsR *SmsTemplateRepository) GetById(id uint) (*domain.SMSTemplate, error) {
-	smsTemplate := new(domain.SMSTemplate)
+func (smsR smsTemplateRepository) GetById(id uint) (domain.SMSTemplate, error) {
+	var smsTemplate domain.SMSTemplate
 	db, _ := database.GetDatabaseConnection()
-	db.Where("id = ?", id).First(&smsTemplate)
-	if smsTemplate.ID == 0 {
-		return nil, errors.New("SMSTemplate not found")
-	}
-	return smsTemplate, nil
+
+	tx := db.Where("id = ?", id).First(&smsTemplate)
+
+	return smsTemplate, tx.Error
 }
 
-func (smsR *SmsTemplateRepository) GetByUserId(userId uint) ([]domain.SMSTemplate, error) {
+func (smsR smsTemplateRepository) GetByUserId(userId uint) ([]domain.SMSTemplate, error) {
 	var smsTemplate []domain.SMSTemplate
 	db, _ := database.GetDatabaseConnection()
-	db.Where("user_id = ?", userId).Find(&smsTemplate)
-	return smsTemplate, nil
+	tx := db.Where("user_id = ?", userId).Find(&smsTemplate)
+
+	return smsTemplate, tx.Error
 }

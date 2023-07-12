@@ -19,13 +19,13 @@ type SmsTemplateHandler struct {
 }
 
 func NewSmsTemplateHandler(
-	smsTemplateUseCase *usecase.SmsTemplateUsecase,
+	smsTemplateUseCase usecase.SmsTemplateUsecase,
 	smsService usecase.SmsServiceImpl,
 	contactService usecase.ContactService,
 	phoneBookService usecase.PhoneBookService,
 ) *SmsTemplateHandler {
 	return &SmsTemplateHandler{
-		smsTemplateUseCase: smsTemplateUseCase,
+		smsTemplateUseCase: &smsTemplateUseCase,
 		smsService:         &smsService,
 		contactService:     &contactService,
 		phoneBookService:   &phoneBookService,
@@ -100,7 +100,7 @@ func (smsh *SmsTemplateHandler) NewSmsTemplate(c echo.Context) error {
 		UserID: user.ID,
 		Text:   request.Text,
 	}
-	ressmsTemplate, err := smsh.smsTemplateUseCase.CreateSMSTemplate(&smsTemplate)
+	ressmsTemplate, err := smsh.smsTemplateUseCase.CreateSMSTemplate(smsTemplate)
 	if err != nil {
 		fmt.Printf("err: %v\n", err)
 		return c.JSON(http.StatusInternalServerError, Response{Message: "Cant create sms template"})
