@@ -49,3 +49,7 @@ func (n ContactService) GetContactByUsername(username string) (domain.Contact, e
 func (n ContactService) GetContactByPhone(phone string) (domain.Contact, error) {
 	return n.contactRepo.GetByPhone(phone)
 }
+
+func (n ContactService) GetContactsByListOfPhoneBook(phoneBookIds []uint) ([]domain.Contact, error) {
+	return n.contactRepo.GetByListOfPhoneBook(phoneBookIds)
+}

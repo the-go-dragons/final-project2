@@ -1,6 +1,9 @@
 package usecase
 
 import (
+	"strconv"
+	"strings"
+
 	"github.com/the-go-dragons/final-project2/internal/domain"
 	"github.com/the-go-dragons/final-project2/internal/interfaces/persistence"
 	"github.com/the-go-dragons/final-project2/pkg/rabbitmq"
@@ -27,8 +30,16 @@ type SMSHistoryDto struct {
 	Content         string      `json:"content"`
 }
 
-func NewSmsService(
-	smsRepo persistence.SmsHistoryRepository,
+type SmsPhonebookDto struct {
+	PhoneBookdIds []uint      `json:"phoneBookIds"`
+	SenderNumber  string      `json:"senderNumber"`
+	UserId        uint        `json:"userId"`
+	Username      string      `json:"username"`
+	User          domain.User `json:"user"`
+	Content       string      `json:"content"`
+}
+
+func NewSmsService(smsRepo persistence.SmsHistoryRepository,
 	userRepo persistence.UserRepository,
 	phonebookRepo persistence.PhoneBookRepository,
 	numberRepo persistence.NumberRepository,
@@ -68,4 +79,61 @@ func (s SmsServiceImpl) SingleSMS(smsHistory domain.SMSHistory) error {
 
 func (s SmsServiceImpl) GetSMSHistoryByUserId(userId uint) ([]domain.SMSHistory, error) {
 	return s.smsRepo.GetByUserId(userId)
+}
+
+func (s SmsServiceImpl) SendToPhonebooks(smsDto SmsPhonebookDto) error {
+	contacts, err := s.contactRepo.GetByListOfPhoneBook(smsDto.PhoneBookdIds)
+
+	if err != nil {
+		return err
+	}
+
+	for _, phoneBookId := range smsDto.PhoneBookdIds {
+		phoneBook, err := s.phonebookRepo.GetById(phoneBookId)
+
+		if err != nil {
+			return err
+		}
+
+		phoneBookContacts, err := s.contactRepo.GetByPhoneBookId(phoneBook.ID)
+
+		if err != nil {
+			return err
+		}
+
+		var ids []string
+		for _, pb := range phoneBookContacts {
+			ids = append(ids, strconv.Itoa(int(pb.ID)))
+		}
+		phoneBooksContactIds := strings.Join(ids, ",")
+
+		newSmsHistoryRecord := domain.SMSHistory{
+			UserId:          smsDto.UserId,
+			User:            smsDto.User,
+			SenderNumber:    smsDto.SenderNumber,
+			ReceiverNumbers: phoneBooksContactIds,
+			Content:         smsDto.Content,
+		}
+
+		_, err = s.smsRepo.Create(newSmsHistoryRecord)
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, contact := range contacts {
+
+		// Call the rabbitmq to queue the sms
+		smsBody := rabbitmq.SMSBody{
+			Sender:    smsDto.SenderNumber,
+			Receivers: contact.Phone,
+			Massage:   smsDto.Content,
+		}
+
+		_ = smsBody
+
+		rabbitmq.NewMassage(smsBody)
+	}
+
+	return nil
 }
