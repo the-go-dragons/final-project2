@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"errors"
-	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -63,12 +62,24 @@ func NewSmsService(smsRepo persistence.SmsHistoryRepository,
 
 func (s SmsServiceImpl) SendSingle(smsDto SMSHistoryDto) error {
 	var phoneBook domain.PhoneBook
+
+	
+	newSmsHistoryRecord := domain.SMSHistory{
+		UserId:          smsDto.UserId,
+		User:            smsDto.User,
+		SenderNumber:    smsDto.SenderNumber,
+		ReceiverNumbers: smsDto.ReceiverNumbers,
+		Content:         smsDto.Content,
+	}
+
 	if smsDto.PhoneBookId != 0 {
 		phoneBookById, err := s.phonebookRepo.Get(smsDto.PhoneBookId)
 		if err != nil {
 			return err
 		}
 		phoneBook = phoneBookById
+		newSmsHistoryRecord.PhoneBook = phoneBook
+		newSmsHistoryRecord.PhoneBookId = phoneBook.ID
 	} else {
 		number, err := s.numberRepo.GetByPhone(smsDto.SenderNumber)
 		if err != nil {
@@ -82,8 +93,6 @@ func (s SmsServiceImpl) SendSingle(smsDto SMSHistoryDto) error {
 			return err
 		}
 
-		fmt.Printf("subscription.UserID: %v\n", subscription.UserID)
-		fmt.Printf("subscription.User.ID: %v\n", subscription.User.ID)
 		if subscription.ID == 0 || subscription.UserID == 0 {
 			return errors.New("this number is assigned to any subscription")
 		}
@@ -97,21 +106,15 @@ func (s SmsServiceImpl) SendSingle(smsDto SMSHistoryDto) error {
 		if len(phoneBooks) == 0 {
 			return errors.New("this user has no phonebook")
 		}
+
+		newSmsHistoryRecord.PhoneBook = phoneBooks[0]
+		newSmsHistoryRecord.PhoneBookId = phoneBooks[0].ID
 	}
 
 	now := time.Now()
+	newSmsHistoryRecord.CreatedAt = now
+	newSmsHistoryRecord.UpdatedAt = now
 
-	newSmsHistoryRecord := domain.SMSHistory{
-		UserId:          smsDto.UserId,
-		User:            smsDto.User,
-		SenderNumber:    smsDto.SenderNumber,
-		ReceiverNumbers: smsDto.ReceiverNumbers,
-		PhoneBook:       phoneBook,
-		PhoneBookId:     smsDto.PhoneBookId,
-		Content:         smsDto.Content,
-		CreatedAt:       now,
-		UpdatedAt:       now,
-	}
 
 	_, err := s.smsRepo.Create(newSmsHistoryRecord)
 	if err != nil {
