@@ -54,3 +54,19 @@ type InvalidPaymentStatus struct {
 func (o InvalidPaymentStatus) Error() string {
 	return fmt.Sprint("Invalid payment status payment id:", o.paymentID, " with status:", o.status)
 }
+
+type InvalidNumber struct {
+	numberID int
+}
+
+func (n InvalidNumber) Error() string {
+	return fmt.Sprint("Invalid  number id:", n.numberID)
+}
+
+type UserNotFound struct {
+	userID int
+}
+
+func (u UserNotFound) Error() string {
+	return fmt.Sprint("User not found for user id:", u.userID)
+}
