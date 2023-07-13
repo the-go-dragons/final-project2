@@ -18,6 +18,8 @@ type SMSTemplateHandler interface {
 	NewSingleSmsWithUsernameWithTemplate(echo.Context) error
 	NewSinglePeriodSmsWithTemplate(echo.Context) error
 	NewSinglePeriodSmsWithUsernameWithTemplate(echo.Context) error
+	NewPhoneBooksSmsWithTemplate(echo.Context) error
+	NewPhoneBooksPeriodSmsWithTemplate(echo.Context) error
 }
 
 type smsTemplateHandler struct {
@@ -25,6 +27,7 @@ type smsTemplateHandler struct {
 	smsService         usecase.SMSService
 	contactService     usecase.ContactService
 	phoneBookService   usecase.PhoneBookService
+	wordService        usecase.InappropriateWordService
 }
 
 func NewSmsTemplateHandler(
@@ -32,12 +35,14 @@ func NewSmsTemplateHandler(
 	smsService usecase.SMSService,
 	contactService usecase.ContactService,
 	phoneBookService usecase.PhoneBookService,
+	wordService usecase.InappropriateWordService,
 ) SMSTemplateHandler {
 	return smsTemplateHandler{
 		smsTemplateService: smsTemplateService,
 		smsService:         smsService,
 		contactService:     contactService,
 		phoneBookService:   phoneBookService,
+		wordService:        wordService,
 	}
 }
 
@@ -82,6 +87,23 @@ type SinglePeriodSmsWithUsernameWithTemplateRequest struct {
 	TemplateId       uint   `json:"templateId"`
 	Period           string `json:"period"`
 	RepeatationCount uint   `json:"repeatationCount"`
+}
+
+type PhoneBookSmsWithTemplateRequest struct {
+	SenderNumber       string `json:"senderNumber"`
+	ReceiverPhoneBooks []uint `json:"receiverPhoneBooks"`
+	PhoneBookId        uint   `json:"phoneBookId"`
+	Content            string `json:"content"`
+	TemplateId         uint   `json:"templateId"`
+}
+
+type PhoneBookPeriodSmsWithTemplateRequest struct {
+	SenderNumber       string `json:"senderNumber"`
+	ReceiverPhoneBooks []uint `json:"receiverPhoneBooks"`
+	Content            string `json:"content"`
+	TemplateId         uint   `json:"templateId"`
+	Period             string `json:"period"`
+	RepeatationCount   uint   `json:"repeatationCount"`
 }
 
 func (smsh smsTemplateHandler) NewSmsTemplate(c echo.Context) error {
@@ -172,6 +194,12 @@ func (smsh smsTemplateHandler) NewSingleSmsWithTemplate(c echo.Context) error {
 	}
 	content := fmt.Sprintf(template.Text, interfaceSlice...)
 
+	// Check for inappropriate words
+	err = smsh.wordService.CheckInappropriateWordsWithRegex(content)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, Response{Message: "Inappropriate word found"})
+	}
+
 	// Send sms and new sms history
 	smsHistoryRecord := domain.SMSHistory{
 		UserId:          user.ID,
@@ -183,7 +211,6 @@ func (smsh smsTemplateHandler) NewSingleSmsWithTemplate(c echo.Context) error {
 
 	err = smsh.smsService.SendSMS(smsHistoryRecord)
 	if err != nil {
-
 		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't send sms " + err.Error()})
 	}
 
@@ -242,6 +269,12 @@ func (smsh smsTemplateHandler) NewSingleSmsWithUsernameWithTemplate(c echo.Conte
 	}
 	content := fmt.Sprintf(template.Text, interfaceSlice...)
 
+	// Check for inappropriate words
+	err = smsh.wordService.CheckInappropriateWordsWithRegex(content)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, Response{Message: "Inappropriate word found"})
+	}
+
 	// Send sms and new sms history
 	smsHistoryRecord := domain.SMSHistory{
 		UserId:          user.ID,
@@ -293,6 +326,12 @@ func (smsh smsTemplateHandler) NewSinglePeriodSmsWithTemplate(c echo.Context) er
 		interfaceSlice[i] = v
 	}
 	content := fmt.Sprintf(template.Text, interfaceSlice...)
+
+	// Check for inappropriate words
+	err = smsh.wordService.CheckInappropriateWordsWithRegex(content)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, Response{Message: "Inappropriate word found"})
+	}
 
 	// Add new cron job
 	cronjob.AddNewJob(user, request.Period, content, request.SenderNumber, request.ReceiverNumber, request.RepeatationCount, smsh.smsService)
@@ -352,8 +391,125 @@ func (smsh smsTemplateHandler) NewSinglePeriodSmsWithUsernameWithTemplate(c echo
 	}
 	content := fmt.Sprintf(template.Text, interfaceSlice...)
 
+	// Check for inappropriate words
+	err = smsh.wordService.CheckInappropriateWordsWithRegex(content)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, Response{Message: "Inappropriate word found"})
+	}
+
 	// Add new cron job
 	cronjob.AddNewJob(user, request.Period, content, request.SenderNumber, contact.Phone, request.RepeatationCount, smsh.smsService)
+
+	return c.JSON(http.StatusOK, Response{Message: "SMS Sent"})
+}
+
+func (smsh smsTemplateHandler) NewPhoneBooksSmsWithTemplate(c echo.Context) error {
+	user := c.Get("user").(domain.User)
+	var request PhoneBookSmsWithTemplateRequest
+
+	// Check the request body
+	err := c.Bind(&request)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, Response{Message: "Invalid data entry"})
+	}
+	if request.Content == "" || len(request.ReceiverPhoneBooks) == 0 || request.SenderNumber == "" {
+		return c.JSON(http.StatusBadRequest, Response{Message: "Missing required fields"})
+	}
+	if CheckTheNumberFormat(request.SenderNumber) != nil {
+		return c.JSON(http.StatusBadRequest, Response{Message: "invalid sender number"})
+	}
+
+	// Check the template
+	template, err := smsh.smsTemplateService.GetSMSTemplateById(request.TemplateId)
+	if err != nil || template.ID == 0 {
+		return c.JSON(http.StatusBadRequest, Response{Message: "Template not found"})
+	}
+	if template.UserID != user.ID {
+		return c.JSON(http.StatusBadRequest, Response{Message: "The selected template is not for the user"})
+	}
+
+	// Make the content with the template
+	slices := strings.Split(string(request.Content), "%")
+	interfaceSlice := make([]interface{}, len(slices))
+
+	for i, v := range slices {
+		interfaceSlice[i] = v
+	}
+	content := fmt.Sprintf(template.Text, interfaceSlice...)
+
+	// Check for inappropriate words
+	err = smsh.wordService.CheckInappropriateWordsWithRegex(content)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, Response{Message: "Inappropriate word found"})
+	}
+
+	err = smsh.smsService.SendSMSToPhonebookIds(domain.SMSHistory{
+		Content:      content,
+		SenderNumber: request.SenderNumber,
+		UserId:       user.ID,
+		User:         user,
+	}, request.ReceiverPhoneBooks)
+
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't send sms: " + err.Error()})
+	}
+
+	return c.JSON(http.StatusOK, Response{Message: "SMS Sent"})
+}
+
+func (smsh smsTemplateHandler) NewPhoneBooksPeriodSmsWithTemplate(c echo.Context) error {
+	user := c.Get("user").(domain.User)
+	var request PhoneBookPeriodSmsWithTemplateRequest
+
+	// Check the request body
+	err := c.Bind(&request)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, Response{Message: "Invalid data entry"})
+	}
+	if request.Content == "" || len(request.ReceiverPhoneBooks) == 0 || request.SenderNumber == "" || request.Period == "" || request.RepeatationCount == 0 {
+		return c.JSON(http.StatusBadRequest, Error{Message: "Missing required fields"})
+	}
+	if CheckTheNumberFormat(request.SenderNumber) != nil {
+		return c.JSON(http.StatusBadRequest, Response{Message: "invalid sender number"})
+	}
+
+	// Check the template
+	template, err := smsh.smsTemplateService.GetSMSTemplateById(request.TemplateId)
+	if err != nil || template.ID == 0 {
+		return c.JSON(http.StatusBadRequest, Response{Message: "Template not found"})
+	}
+	if template.UserID != user.ID {
+		return c.JSON(http.StatusBadRequest, Response{Message: "The selected template is not for the user"})
+	}
+
+	// Make the content with the template
+	slices := strings.Split(string(request.Content), "%")
+	interfaceSlice := make([]interface{}, len(slices))
+
+	for i, v := range slices {
+		interfaceSlice[i] = v
+	}
+	content := fmt.Sprintf(template.Text, interfaceSlice...)
+
+	// Check for inappropriate words
+	err = smsh.wordService.CheckInappropriateWordsWithRegex(content)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, Response{Message: "Inappropriate word found"})
+	}
+
+	smsHistory, err := smsh.smsService.SendPeriodSMSToPhonebookIds(domain.SMSHistory{
+		Content:      content,
+		SenderNumber: request.SenderNumber,
+		UserId:       user.ID,
+		User:         user,
+	}, request.ReceiverPhoneBooks)
+
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't send sms: " + err.Error()})
+	}
+
+	// Add new cron job
+	cronjob.AddNewJob(user, request.Period, smsHistory.Content, smsHistory.SenderNumber, smsHistory.ReceiverNumbers, request.RepeatationCount, smsh.smsService)
 
 	return c.JSON(http.StatusOK, Response{Message: "SMS Sent"})
 }
