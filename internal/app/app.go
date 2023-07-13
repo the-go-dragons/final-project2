@@ -86,7 +86,7 @@ func routing(e *echo.Echo) {
 	smsHistoryHandler := handlers.NewSmsHistoryHandler(smsHistoryUsecase)
 
 	e.GET("/", func(c echo.Context) error {
-        return c.JSON(http.StatusOK, "welcome to sms panel Q")
+        return c.JSON(http.StatusOK, "welcome to sms panel Q (Go dragons Team)")
     })
 
 	e.POST("/signup", userHandler.Signup)
