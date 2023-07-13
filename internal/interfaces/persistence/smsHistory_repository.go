@@ -96,14 +96,23 @@ func (shr SmsHistoryRepositoryImpl) GetAll() ([]domain.SMSHistory, error) {
 
 	return smsHistories, nil
 }
-
 func (shr SmsHistoryRepositoryImpl) Search(words []string) ([]domain.SMSHistory, error) {
-	// Concatenate the input array of words into a single string
-	searchString := strings.Join(words, " ")
 
 	var smsHistories = make([]domain.SMSHistory, 0)
 	db, _ := database.GetDatabaseConnection()
 	db = db.Model(&smsHistories)
+
+	// If no search words are specified, return all SMS history records
+	if len(words) == 0 {
+		tx := db.Debug().Find(&smsHistories)
+		if err := tx.Error; err != nil {
+			return smsHistories, err
+		}
+		return smsHistories, nil
+	}
+
+	// Concatenate the input array of words into a single string
+	searchString := strings.Join(words, " ")
 
 	// Split the search string into individual words
 	searchWords := strings.Fields(searchString)
