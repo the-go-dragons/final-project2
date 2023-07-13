@@ -6,71 +6,48 @@ import (
 )
 
 type TransactionRepository interface {
-	Create(input domain.Transaction) (domain.Transaction, error)
-	Update(input domain.Transaction) (domain.Transaction, error)
-	Get(id int) (domain.Transaction, error)
-	GetByWalletID(walletID int) ([]domain.Transaction, error)
+	Create(domain.Transaction) (domain.Transaction, error)
+	Update(domain.Transaction) (domain.Transaction, error)
+	Get(int) (domain.Transaction, error)
+	GetByWalletID(int) ([]domain.Transaction, error)
 }
 
-type TransactionRepositoryImpl struct {
+type transactionRepository struct {
 }
 
 func NewTransactionRepository() TransactionRepository {
-	return TransactionRepositoryImpl{}
+	return transactionRepository{}
 }
 
-func (a TransactionRepositoryImpl) Create(input domain.Transaction) (domain.Transaction, error) {
+func (a transactionRepository) Create(input domain.Transaction) (domain.Transaction, error) {
 	db, _ := database.GetDatabaseConnection()
 	tx := db.Debug().Create(&input)
 
-	if tx.Error != nil {
-		return input, tx.Error
-	}
-
-	return input, nil
+	return input, tx.Error
 }
 
-func (a TransactionRepositoryImpl) Update(input domain.Transaction) (domain.Transaction, error) {
-	var transction domain.Transaction
-	db, err := database.GetDatabaseConnection()
-	if err != nil {
-		return transction, err
-	}
-	_, err = a.Get(int(input.ID))
-	if err != nil {
-		return transction, err
-	}
-	tx := db.Save(input)
-	if err := tx.Error; err != nil {
-		return transction, err
-	}
+func (a transactionRepository) Update(input domain.Transaction) (domain.Transaction, error) {
+	db, _ := database.GetDatabaseConnection()
+	tx := db.Save(&input)
 
-	return transction, nil
+	return input, tx.Error
 }
 
-func (a TransactionRepositoryImpl) Get(id int) (domain.Transaction, error) {
+func (a transactionRepository) Get(id int) (domain.Transaction, error) {
 	var transaction domain.Transaction
 	db, _ := database.GetDatabaseConnection()
 
 	tx := db.First(&transaction, id)
 
-	if err := tx.Error; err != nil {
-		return transaction, err
-	}
-
-	return transaction, nil
+	return transaction, tx.Error
 }
 
-func (a TransactionRepositoryImpl) GetByWalletID(walletID int) ([]domain.Transaction, error) {
+func (a transactionRepository) GetByWalletID(walletID int) ([]domain.Transaction, error) {
 	var transactions []domain.Transaction
 
 	db, _ := database.GetDatabaseConnection()
 
 	tx := db.Where("wallet_id = ?", walletID).Find(&transactions)
 
-	if err := tx.Error; err != nil {
-		return transactions, err
-	}
-
-	return transactions, nil
+	return transactions, tx.Error
 }

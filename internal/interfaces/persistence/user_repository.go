@@ -1,85 +1,71 @@
 package persistence
 
 import (
-	"errors"
-	"net/http"
-	"strconv"
-
 	"github.com/the-go-dragons/final-project2/internal/domain"
 	"github.com/the-go-dragons/final-project2/pkg/database"
 )
 
-type UserRepository struct{}
-
-func NewUserRepository() *UserRepository {
-	return &UserRepository{}
+type UserRepository interface {
+	Create(user domain.User) (domain.User, error)
+	GetById(id uint) (domain.User, error)
+	GeByUsername(username string) (domain.User, error)
+	Update(user domain.User) (domain.User, error)
+	GetAll() ([]domain.User, error)
+	Delete(id uint) error
 }
 
-func (ur *UserRepository) Create(user *domain.User) (*domain.User, error) {
+type userRepository struct{}
+
+func NewUserRepository() UserRepository {
+	return &userRepository{}
+}
+
+func (ur userRepository) Create(user domain.User) (domain.User, error) {
 	db, _ := database.GetDatabaseConnection()
-	result := db.Create(&user)
-	if result.Error != nil {
-		return nil, result.Error
-	}
-	return user, nil
+	tx := db.Create(&user)
+
+	return user, tx.Error
 }
 
-func (ur *UserRepository) GetById(id uint) (*domain.User, error) {
-	user := new(domain.User)
+func (ur userRepository) GetById(id uint) (domain.User, error) {
+	var user domain.User
 	db, _ := database.GetDatabaseConnection()
-	db.Where("id = ?", id).First(&user)
-	if user.ID == 0 {
-		return nil, errors.New("user not found")
-	}
-	return user, nil
+	tx := db.Where("id = ?", id).First(&user)
+
+	return user, tx.Error
 }
 
-func (ur *UserRepository) GeByUsername(username string) (*domain.User, error) {
-	user := new(domain.User)
+func (ur userRepository) GeByUsername(username string) (domain.User, error) {
+	var user domain.User
 	db, _ := database.GetDatabaseConnection()
-	db.Where("username = ?", username).First(&user)
-	if user.ID == 0 {
-		return nil, errors.New("user not found")
-	}
-	return user, nil
+	tx := db.Where("username = ?", username).First(&user)
+
+	return user, tx.Error
 }
 
-func (ur *UserRepository) Update(user *domain.User) (*domain.User, error) {
+func (ur userRepository) Update(user domain.User) (domain.User, error) {
 	db, _ := database.GetDatabaseConnection()
-	db.Save(&user)
-	return user, nil
+	tx := db.Save(&user)
+	return user, tx.Error
 }
 
-func (ur *UserRepository) GetAll() (*[]domain.User, error) {
+func (ur userRepository) GetAll() ([]domain.User, error) {
 	var users []domain.User
 	db, _ := database.GetDatabaseConnection()
-	db = db.Model(&users)
-
-	checkUserExist := db.Debug().Find(&users)
-
-	if checkUserExist.RowsAffected <= 0 {
-		return &users, errors.New(strconv.Itoa(http.StatusNotFound))
-	}
 
 	tx := db.Debug().Find(&users)
 
-	if err := tx.Error; err != nil {
-		return nil, err
-	}
-
-	return &users, nil
+	return users, tx.Error
 }
 
-func (ur *UserRepository) Delete(id uint) error {
+func (ur userRepository) Delete(id uint) error {
 	user, err := ur.GetById(id)
 	if err != nil {
 		return err
 	}
 	db, _ := database.GetDatabaseConnection()
-	db = db.Model(&user)
-	deleted := db.Debug().Delete(user).Commit()
-	if deleted.Error != nil {
-		return deleted.Error
-	}
-	return nil
+
+	tx := db.Delete(&user)
+
+	return tx.Error
 }

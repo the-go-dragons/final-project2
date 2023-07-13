@@ -1,137 +1,83 @@
 package http
 
 import (
-	"fmt"
+	"net/http"
+	"strconv"
+
 	"github.com/labstack/echo/v4"
 	"github.com/the-go-dragons/final-project2/internal/domain"
 	"github.com/the-go-dragons/final-project2/internal/usecase"
-	"net/http"
-	"strconv"
 )
 
 type PhoneBookHandler struct {
-	phonebookService *usecase.PhoneBookService
+	phonebookService usecase.PhoneBookService
 }
 
 func NewPhoneBookHandler(phonebookService usecase.PhoneBookService) PhoneBookHandler {
-	return PhoneBookHandler{phonebookService: &phonebookService}
+	return PhoneBookHandler{phonebookService: phonebookService}
 }
 
-func (n PhoneBookHandler) Create(c echo.Context) error {
-	var req usecase.PhoneBookDto
-	err := c.Bind(&req)
+type NewPhoneBookRequest struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
+func (pbh PhoneBookHandler) Create(c echo.Context) error {
+	user := c.Get("user").(domain.User)
+	var request NewPhoneBookRequest
+
+	// Check the body
+	err := c.Bind(&request)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, Error{Message: "Invalid data entry"})
 	}
-
-	if len(req.Name) == 0 {
-		return c.JSON(http.StatusBadRequest, Response{Message: "Invalid name"})
+	if request.Name == "" {
+		return c.JSON(http.StatusBadRequest, Error{Message: "Missing required fields"})
 	}
 
-	user := c.Get("user").(domain.User)
-	if user.ID == 0 || user.Username == "" {
-		return c.JSON(http.StatusBadRequest, Error{Message: "login first"})
-	}
-	req.UserID = user.ID
-
-	dto := usecase.PhoneBookDto{
-		Name:        req.Name,
-		UserID:      req.UserID,
-		Description: req.Description,
-	}
-
-	_, err = n.phonebookService.Create(dto)
-	if err != nil {
-		fmt.Printf("err: %v\n", err)
-		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't create number"})
+	// Create the phonebook
+	phonebook, err := pbh.phonebookService.CreatePhoneBook(domain.PhoneBook{
+		Name:        request.Name,
+		Description: request.Description,
+		UserID:      user.ID,
+	})
+	if err != nil || phonebook.ID == 0 {
+		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't create phonebook"})
 	}
 
 	return c.JSON(http.StatusOK, Response{Message: "Created"})
 }
 
-func (n PhoneBookHandler) Edit(c echo.Context) error {
-	var req usecase.PhoneBookDto
-	err := c.Bind(&req)
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, Error{Message: "Invalid data entry"})
-	}
-
-	if len(req.Name) == 0 {
-		return c.JSON(http.StatusBadRequest, Response{Message: "Invalid name"})
-	}
-
+func (pbh PhoneBookHandler) GetAll(c echo.Context) error {
 	user := c.Get("user").(domain.User)
-	if user.ID == 0 || user.Username == "" {
-		return c.JSON(http.StatusBadRequest, Error{Message: "login first"})
-	}
-	req.UserID = user.ID
+	phonebookList, err := pbh.phonebookService.GetAllPhoneBooksByUserId(user.ID)
 
-	if req.ID == 0 {
-		return c.JSON(http.StatusBadRequest, Response{Message: "Invalid Id"})
-	}
-
-	dto := usecase.PhoneBookDto{
-		Name:        req.Name,
-		UserID:      req.UserID,
-		Description: req.Description,
-		ID:          req.ID,
-	}
-
-	_, err = n.phonebookService.Edit(dto)
 	if err != nil {
-		fmt.Printf("err: %v\n", err)
-		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't create number"})
-	}
-
-	return c.JSON(http.StatusOK, Response{Message: "Created"})
-}
-
-func (n PhoneBookHandler) GetByUserName(c echo.Context) error {
-	user := c.Get("user").(domain.User)
-	if user.ID == 0 || user.Username == "" {
-		return c.JSON(http.StatusBadRequest, Error{Message: "login first"})
-	}
-	username := user.Username
-
-	phonebookList, err := n.phonebookService.GetByUserName(username)
-	if err != nil {
-		fmt.Printf("err: %v\n", err)
-		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't create number"})
+		return c.JSON(http.StatusBadRequest, Response{Message: "Can't get phone books"})
 	}
 
 	return c.JSON(http.StatusOK, phonebookList)
 }
 
-func (n PhoneBookHandler) GetAll(c echo.Context) error {
-	phonebookList, err := n.phonebookService.GetAll()
-
-	if phonebookList != nil && len(phonebookList) == 0 {
-		return c.JSON(http.StatusOK, phonebookList)
+func (pbh PhoneBookHandler) Delete(c echo.Context) error {
+	user := c.Get("user").(domain.User)
+	phonebookId, err := strconv.Atoi(c.Param("id"))
+	if err != nil || phonebookId == 0 {
+		return c.JSON(http.StatusInternalServerError, Response{Message: "Invalid id"})
 	}
 
+	phonebook, err := pbh.phonebookService.GetPhoneBookById(uint(phonebookId))
+	if err != nil || phonebook.ID == 0 {
+		return c.JSON(http.StatusBadRequest, Error{Message: "Phonebook not found"})
+	}
+
+	if phonebook.UserID != user.ID {
+		return c.JSON(http.StatusBadRequest, Error{Message: "Phonebook is not for the user"})
+	}
+
+	err = pbh.phonebookService.DeletePhoneBook(uint(phonebookId))
 	if err != nil {
-		fmt.Printf("err: %v\n", err)
-		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't create number"})
-	}
-
-	return c.JSON(http.StatusOK, phonebookList)
-}
-
-func (n PhoneBookHandler) Delete(c echo.Context) error {
-	id := c.QueryParam("id")
-	if id == "0" {
-		return c.JSON(http.StatusBadRequest, Error{Message: "Invalid id"})
-	}
-
-	iId, err := strconv.Atoi(id)
-	if err != nil {
-		fmt.Printf("err: %v\n", err)
-		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't create number"})
-	}
-	err = n.phonebookService.Delete(uint(iId))
-	if err != nil {
-		fmt.Printf("err: %v\n", err)
-		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't create number"})
+		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't delete phone book"})
 	}
 
 	return c.JSON(http.StatusOK, Response{Message: "PhoneBook Deleted Successfully"})

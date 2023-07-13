@@ -2,20 +2,23 @@ package usecase
 
 import (
 	"errors"
-	"strconv"
 	"strings"
-	"time"
 
 	"github.com/the-go-dragons/final-project2/internal/domain"
 	"github.com/the-go-dragons/final-project2/internal/interfaces/persistence"
 	"github.com/the-go-dragons/final-project2/pkg/rabbitmq"
 )
 
-type SmsService interface {
-	SendSingle(smsDto SMSHistoryDto) error
+type SMSService interface {
+	CreateSMS(domain.SMSHistory) (domain.SMSHistory, error)
+	SendSMS(domain.SMSHistory) error
+	GetSMSHistoryByUserId(uint) ([]domain.SMSHistory, error)
+	SendSMSToPhonebookIds(domain.SMSHistory, []uint) error
+	CheckNumberByUserId(domain.User, string) error
+	SendPeriodSMSToPhonebookIds(domain.SMSHistory, []uint) (domain.SMSHistory, error)
 }
 
-type SmsServiceImpl struct {
+type smsService struct {
 	smsRepo          persistence.SmsHistoryRepository
 	userRepo         persistence.UserRepository
 	phonebookRepo    persistence.PhoneBookRepository
@@ -24,33 +27,15 @@ type SmsServiceImpl struct {
 	contactRepo      persistence.ContactRepository
 }
 
-type SMSHistoryDto struct {
-	ID              uint        `json:"id"`
-	UserId          uint        `json:"userId"`
-	SenderNumber    string      `json:"senderNumber"`
-	ReceiverNumbers string      `json:"receiverNumbers"`
-	PhoneBookId     uint        `json:"phoneBookId"`
-	Content         string      `json:"content"`
-	Username        string      `json:"username"`
-	User            domain.User `json:"user"`
-}
-
-type SmsPhonebookDto struct {
-	PhoneBookdIds   []uint      `json:"phoneBookIds"`
-	SenderNumber    string      `json:"senderNumber"`
-	UserId          uint        `json:"userId"`
-	Username        string      `json:"username"`
-	User            domain.User `json:"user"`
-	Content         string      `json:"content"`
-}
-
-func NewSmsService(smsRepo persistence.SmsHistoryRepository,
+func NewSmsService(
+	smsRepo persistence.SmsHistoryRepository,
 	userRepo persistence.UserRepository,
 	phonebookRepo persistence.PhoneBookRepository,
 	numberRepo persistence.NumberRepository,
 	subscriptionRepo persistence.SubscriptionRepository,
-	contactRepo persistence.ContactRepository) SmsServiceImpl {
-	return SmsServiceImpl{
+	contactRepo persistence.ContactRepository,
+) SMSService {
+	return smsService{
 		smsRepo:          smsRepo,
 		userRepo:         userRepo,
 		phonebookRepo:    phonebookRepo,
@@ -60,198 +45,109 @@ func NewSmsService(smsRepo persistence.SmsHistoryRepository,
 	}
 }
 
-func (s SmsServiceImpl) SendSingle(smsDto SMSHistoryDto) error {
-	var phoneBook domain.PhoneBook
+func (s smsService) CreateSMS(smsHistory domain.SMSHistory) (domain.SMSHistory, error) {
+	return s.smsRepo.Create(smsHistory)
+}
 
-	
-	newSmsHistoryRecord := domain.SMSHistory{
-		UserId:          smsDto.UserId,
-		User:            smsDto.User,
-		SenderNumber:    smsDto.SenderNumber,
-		ReceiverNumbers: smsDto.ReceiverNumbers,
-		Content:         smsDto.Content,
+func (ss smsService) CheckNumberByUserId(user domain.User, phone string) error {
+	number, err := ss.numberRepo.GetByPhone(phone)
+	if err != nil || number.ID == 0 {
+		return errors.New("number not found")
 	}
 
-	if smsDto.PhoneBookId != 0 {
-		phoneBookById, err := s.phonebookRepo.Get(smsDto.PhoneBookId)
-		if err != nil {
-			return err
+	if number.Type == domain.Public {
+		return nil
+	} else if number.Type == domain.Sale {
+		// If the number is for sale and is not for the user, return false
+		if number.User == nil || *number.UserID != user.ID {
+			return errors.New("number is not for the user")
 		}
-		phoneBook = phoneBookById
-		newSmsHistoryRecord.PhoneBook = phoneBook
-		newSmsHistoryRecord.PhoneBookId = phoneBook.ID
+	} else if number.Type == domain.Rent {
+		subscriptions, _ := ss.subscriptionRepo.GetNotExpiredByNumber(number.ID)
+		if len(subscriptions) != 0 {
+			return errors.New("number is not available")
+		}
 	} else {
-		number, err := s.numberRepo.GetByPhone(smsDto.SenderNumber)
-		if err != nil {
-			return err
-		}
-		if number.ID == 0 {
-			return errors.New("there is no such a number")
-		}
-		subscription, err := s.subscriptionRepo.GetByNumber(number)
-		if err != nil {
-			return err
-		}
-
-		if subscription.ID == 0 || subscription.UserID == 0 {
-			return errors.New("this number is assigned to any subscription")
-		}
-		user := &domain.User{
-			ID: subscription.UserID,
-		}
-		phoneBooks, err := s.phonebookRepo.GetByUser(user)
-		if err != nil {
-			return err
-		}
-		if len(phoneBooks) == 0 {
-			return errors.New("this user has no phonebook")
-		}
-
-		newSmsHistoryRecord.PhoneBook = phoneBooks[0]
-		newSmsHistoryRecord.PhoneBookId = phoneBooks[0].ID
+		return errors.New("invalid number type")
 	}
-
-	now := time.Now()
-	newSmsHistoryRecord.CreatedAt = now
-	newSmsHistoryRecord.UpdatedAt = now
-
-
-	_, err := s.smsRepo.Create(newSmsHistoryRecord)
-	if err != nil {
-		return err
-	}
-
-	// Call the rabbitmq to queue the sms
-	smsBody := rabbitmq.SMSBody{
-		Sender:    newSmsHistoryRecord.SenderNumber,
-		Receivers: newSmsHistoryRecord.ReceiverNumbers,
-		Massage:   newSmsHistoryRecord.Content,
-	}
-	rabbitmq.NewMassage(smsBody)
-
 	return nil
 }
 
-func (s SmsServiceImpl) SendSingleByUsername(smsDto SMSHistoryDto) (string, error) {
-	var newSmsHistoryRecord domain.SMSHistory
-	receiverNumber := ""
-	contact, err := s.contactRepo.GetByUsername(smsDto.Username)
+func (s smsService) SendSMS(smsHistory domain.SMSHistory) error {
+	// Check the sender number
+	err := s.CheckNumberByUserId(smsHistory.User, smsHistory.SenderNumber)
 	if err != nil {
-		return receiverNumber, err
-	}
-	phoneBooks, err := s.phonebookRepo.GetByUser(&smsDto.User)
-	if err != nil {
-		return receiverNumber, err
-	}
-	if len(phoneBooks) == 0 {
-		return receiverNumber, errors.New("this user has no phonebook")
-	}
-
-	if contact.ID != 0 {
-		receiverNumber = contact.Phone
-	} else {
-		receiverUser, err := s.userRepo.GeByUsername(smsDto.Username)
-		if err != nil {
-			return receiverNumber, err
-		}
-		subscription, err := s.subscriptionRepo.GetByUserId(receiverUser.ID)
-		if err != nil {
-			return receiverNumber, err
-		}
-		if subscription.ID == 0 || subscription.Number.ID == 0 {
-			return receiverNumber, errors.New("no number found for this user")
-		}
-
-		receiverNumber = subscription.Number.Phone
-	}
-
-	now := time.Now()
-	newSmsHistoryRecord = domain.SMSHistory{
-		UserId:          smsDto.UserId,
-		User:            smsDto.User,
-		SenderNumber:    smsDto.SenderNumber,
-		ReceiverNumbers: receiverNumber,
-		PhoneBook:       phoneBooks[0],
-		PhoneBookId:     phoneBooks[0].ID,
-		Content:         smsDto.Content,
-		CreatedAt:       now,
-		UpdatedAt:       now,
-	}
-
-	_, err = s.smsRepo.Create(newSmsHistoryRecord)
-	if err != nil {
-		return receiverNumber, err
+		return err
 	}
 
 	// Call the rabbitmq to queue the sms
 	smsBody := rabbitmq.SMSBody{
-		Sender:    newSmsHistoryRecord.SenderNumber,
-		Receivers: newSmsHistoryRecord.ReceiverNumbers,
-		Massage:   newSmsHistoryRecord.Content,
+		Sender:    smsHistory.SenderNumber,
+		Receivers: smsHistory.ReceiverNumbers,
+		Massage:   smsHistory.Content,
 	}
 	rabbitmq.NewMassage(smsBody)
 
-	return receiverNumber, nil
+	// Save the sms history
+	smsHistory, err = s.CreateSMS(smsHistory)
+
+	return err
 }
 
-func (s SmsServiceImpl) SendToPhonebooks(smsDto SmsPhonebookDto) error {
-	contacts , err := s.contactRepo.GetByPhoneBookIdIn(smsDto.PhoneBookdIds)
+func (s smsService) GetSMSHistoryByUserId(userId uint) ([]domain.SMSHistory, error) {
+	return s.smsRepo.GetByUserId(userId)
+}
 
+func (s smsService) SendSMSToPhonebookIds(smsHistory domain.SMSHistory, receiverPhoneBookIds []uint) error {
+	// Check the sender number
+	err := s.CheckNumberByUserId(smsHistory.User, smsHistory.SenderNumber)
 	if err != nil {
 		return err
 	}
-	
-	for _, phoneBookId := range smsDto.PhoneBookdIds {
-		phoneBook, err := s.phonebookRepo.Get(phoneBookId)
 
-		if err != nil {
-			return err
-		}
-
-		phoneBookContacts, err := s.contactRepo.GetByPhoneBook(&phoneBook)
-
-		if err != nil {
-			return err
-		}
-
-		var ids []string
-		for _, pb := range phoneBookContacts {
-			ids = append(ids, strconv.Itoa(int(pb.ID)))
-		}
-		phoneBooksContactIds := strings.Join(ids, ",")
-
-		now := time.Now()
-		newSmsHistoryRecord := domain.SMSHistory{
-			UserId:          smsDto.UserId,
-			User:            smsDto.User,
-			SenderNumber:    smsDto.SenderNumber,
-			ReceiverNumbers: phoneBooksContactIds,
-			PhoneBook:       phoneBook,
-			PhoneBookId:     phoneBookId,
-			Content:         smsDto.Content,
-			CreatedAt:       now,
-			UpdatedAt:       now,
-		}
-
-		_, err = s.smsRepo.Create(newSmsHistoryRecord)
-		if err != nil {
-			return err
-		}
+	// Get distincted contacts by phone book ids
+	contacts, err := s.contactRepo.GetByOfPhoneBookIds(receiverPhoneBookIds)
+	if err != nil {
+		return err
+	}
+	if len(contacts) == 0 {
+		return errors.New("no contact found")
 	}
 
+	// Get the phones
+	var receivers []string
 	for _, contact := range contacts {
-		
-		// Call the rabbitmq to queue the sms
-		smsBody := rabbitmq.SMSBody{
-			Sender:    smsDto.SenderNumber,
-			Receivers: contact.Phone,
-			Massage:   smsDto.Content,
-		}
+		receivers = append(receivers, contact.Phone)
+	}
+	smsHistory.ReceiverNumbers = strings.Join(receivers, ",")
 
-		_ = smsBody
+	s.SendSMS(smsHistory)
 
-		rabbitmq.NewMassage(smsBody)
+	return err
+}
+
+func (s smsService) SendPeriodSMSToPhonebookIds(smsHistory domain.SMSHistory, receiverPhoneBookIds []uint) (domain.SMSHistory, error) {
+	// Check the sender number
+	err := s.CheckNumberByUserId(smsHistory.User, smsHistory.SenderNumber)
+	if err != nil {
+		return smsHistory, err
 	}
 
-	return nil
+	// Get distincted contacts by phone book ids
+	contacts, err := s.contactRepo.GetByOfPhoneBookIds(receiverPhoneBookIds)
+	if err != nil {
+		return smsHistory, err
+	}
+	if len(contacts) == 0 {
+		return smsHistory, errors.New("no contact found")
+	}
+
+	// Get the phones
+	var receivers []string
+	for _, contact := range contacts {
+		receivers = append(receivers, contact.Phone)
+	}
+	smsHistory.ReceiverNumbers = strings.Join(receivers, ",")
+
+	return smsHistory, err
 }

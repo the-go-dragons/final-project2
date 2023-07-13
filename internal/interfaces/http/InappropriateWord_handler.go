@@ -1,106 +1,79 @@
 package http
 
 import (
-	"fmt"
-	"github.com/labstack/echo/v4"
-	"github.com/the-go-dragons/final-project2/internal/usecase"
 	"net/http"
 	"strconv"
-	"strings"
+
+	"github.com/labstack/echo/v4"
+	"github.com/the-go-dragons/final-project2/internal/domain"
+	"github.com/the-go-dragons/final-project2/internal/usecase"
 )
 
-type InappropriateWordHandler struct {
-	wordService *usecase.InappropriateWordService
+type InappropriateWordHandler interface {
+	CreateInappropriateWord(c echo.Context) error
+	GetAll(c echo.Context) error
+	Delete(c echo.Context) error
 }
 
-func NewInappropriateWordHandler(wordService usecase.InappropriateWordService) InappropriateWordHandler {
-	return InappropriateWordHandler{wordService: &wordService}
+type inappropriateWordHandler struct {
+	wordService usecase.InappropriateWordService
 }
 
-func (n InappropriateWordHandler) Create(c echo.Context) error {
-	var req usecase.InappropriateWordDto
-	err := c.Bind(&req)
+func NewInappropriateWordHandler(
+	wordService usecase.InappropriateWordService,
+) InappropriateWordHandler {
+	return inappropriateWordHandler{
+		wordService: wordService,
+	}
+}
+
+type InappropriateWordResuest struct {
+	Word string `json:"word"`
+}
+
+func (iwh inappropriateWordHandler) CreateInappropriateWord(c echo.Context) error {
+	var request InappropriateWordResuest
+
+	// Check the body
+	err := c.Bind(&request)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, Error{Message: "Invalid data entry"})
 	}
-
-	if len(strings.Trim(req.Word, " ")) == 0 {
-		return c.JSON(http.StatusBadRequest, Response{Message: "Invalid word"})
+	if request.Word == "" {
+		return c.JSON(http.StatusBadRequest, Response{Message: "Invalid body"})
 	}
 
-	dto := usecase.InappropriateWordDto{
-		Word: req.Word,
-	}
-
-	_, err = n.wordService.Create(dto)
-	if err != nil {
-		fmt.Printf("err: %v\n", err)
-		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't create Inappropriate Word"})
+	// Create the inappropriate word record
+	word, err := iwh.wordService.Create(domain.InappropriateWord{
+		Word: request.Word,
+	})
+	if err != nil || word.ID == 0 {
+		c.JSON(http.StatusBadRequest, Response{Message: "Can't create the word"})
 	}
 
 	return c.JSON(http.StatusOK, Response{Message: "Created"})
 }
 
-func (n InappropriateWordHandler) Edit(c echo.Context) error {
-	var req usecase.InappropriateWordDto
-	err := c.Bind(&req)
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, Error{Message: "Invalid data entry"})
-	}
-
-	if len(strings.Trim(req.Word, " ")) == 0 {
-		return c.JSON(http.StatusBadRequest, Response{Message: "Invalid word"})
-	}
-
-	if req.ID == 0 {
-		return c.JSON(http.StatusBadRequest, Response{Message: "Invalid Id"})
-	}
-
-	dto := usecase.InappropriateWordDto{
-		Word: req.Word,
-		ID:   req.ID,
-	}
-
-	_, err = n.wordService.Edit(dto)
-	if err != nil {
-		fmt.Printf("err: %v\n", err)
-		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't create Inappropriate Word"})
-	}
-
-	return c.JSON(http.StatusOK, Response{Message: "Created"})
-}
-
-func (n InappropriateWordHandler) GetAll(c echo.Context) error {
-	wordList, err := n.wordService.GetAll()
-
-	if wordList != nil && len(wordList) == 0 {
-		return c.JSON(http.StatusOK, wordList)
-	}
+func (iwh inappropriateWordHandler) GetAll(c echo.Context) error {
+	wordList, err := iwh.wordService.GetAll()
 
 	if err != nil {
-		fmt.Printf("err: %v\n", err)
-		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't get Inappropriate Words"})
+		c.JSON(http.StatusBadRequest, Response{Message: "Can't get the word list"})
 	}
 
 	return c.JSON(http.StatusOK, wordList)
 }
 
-func (n InappropriateWordHandler) Delete(c echo.Context) error {
-	id := c.QueryParam("id")
-	if id == "0" {
-		return c.JSON(http.StatusBadRequest, Error{Message: "Invalid id"})
+func (iwh inappropriateWordHandler) Delete(c echo.Context) error {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil || id == 0 {
+		return c.JSON(http.StatusBadRequest, Response{Message: "Invalid id"})
 	}
 
-	iId, err := strconv.Atoi(id)
+	err = iwh.wordService.Delete(uint(id))
 	if err != nil {
-		fmt.Printf("err: %v\n", err)
-		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't convert number"})
-	}
-	err = n.wordService.Delete(uint(iId))
-	if err != nil {
-		fmt.Printf("err: %v\n", err)
-		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't delete InappropriateWord"})
+		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't delete word"})
 	}
 
-	return c.JSON(http.StatusOK, Response{Message: "InappropriateWord Deleted Successfully"})
+	return c.JSON(http.StatusOK, Response{Message: "Word Deleted Successfully"})
 }

@@ -6,66 +6,39 @@ import (
 )
 
 type ContactRepository interface {
-	Create(input domain.Contact) (domain.Contact, error)
-	Update(input domain.Contact) (domain.Contact, error)
-	Get(id uint) (domain.Contact, error)
-	Delete(id uint) error
-	GetAll() ([]domain.Contact, error)
-	GetByPhoneBook(phoneBook *domain.PhoneBook) ([]domain.Contact, error)
-	GetByPhoneBookIdIn(phonebookIds []uint) ([]domain.Contact, error)
-	GetByUsername(username string) (domain.Contact, error)
+	Create(domain.Contact) (domain.Contact, error)
+	GetById(uint) (domain.Contact, error)
+	Delete(uint) error
+	GetByPhoneBookId(uint) ([]domain.Contact, error)
+	GetByOfPhoneBookIds([]uint) ([]domain.Contact, error)
+	GetByUsername(string) (domain.Contact, error)
+	GetByPhone(string) (domain.Contact, error)
 }
 
-type ContactRepositoryImpl struct {
+type contactRepository struct {
 }
 
 func NewContactRepository() ContactRepository {
-	return ContactRepositoryImpl{}
+	return contactRepository{}
 }
 
-func (cr ContactRepositoryImpl) Create(input domain.Contact) (domain.Contact, error) {
+func (cr contactRepository) Create(input domain.Contact) (domain.Contact, error) {
 	db, _ := database.GetDatabaseConnection()
 	tx := db.Debug().Create(&input)
 
-	if tx.Error != nil {
-		return input, tx.Error
-	}
-
-	return input, nil
+	return input, tx.Error
 }
 
-func (cr ContactRepositoryImpl) Update(input domain.Contact) (domain.Contact, error) {
-	var contact domain.Contact
-	db, err := database.GetDatabaseConnection()
-	if err != nil {
-		return contact, err
-	}
-	_, err = cr.Get(input.ID)
-	if err != nil {
-		return contact, err
-	}
-	tx := db.Save(input)
-	if err := tx.Error; err != nil {
-		return contact, err
-	}
-
-	return contact, nil
-}
-
-func (cr ContactRepositoryImpl) Get(id uint) (domain.Contact, error) {
+func (cr contactRepository) GetById(id uint) (domain.Contact, error) {
 	var Contact domain.Contact
 	db, _ := database.GetDatabaseConnection()
 
 	tx := db.First(&Contact, id)
 
-	if err := tx.Error; err != nil {
-		return Contact, err
-	}
-
-	return Contact, nil
+	return Contact, tx.Error
 }
 
-func (cr ContactRepositoryImpl) Delete(id uint) error {
+func (cr contactRepository) Delete(id uint) error {
 	var Contact domain.Contact
 	db, _ := database.GetDatabaseConnection()
 
@@ -76,62 +49,42 @@ func (cr ContactRepositoryImpl) Delete(id uint) error {
 	}
 
 	tx = tx.Delete(&Contact)
-	if err := tx.Error; err != nil {
-		return err
-	}
 
-	return nil
+	return tx.Error
 }
 
-func (cr ContactRepositoryImpl) GetAll() ([]domain.Contact, error) {
-	var contacts = make([]domain.Contact, 0)
-	db, _ := database.GetDatabaseConnection()
-	db = db.Model(&contacts)
-
-	tx := db.Debug().Find(&contacts)
-
-	if err := tx.Error; err != nil {
-		return contacts, err
-	}
-
-	return contacts, nil
-}
-
-func (cr ContactRepositoryImpl) GetByPhoneBook(phoneBook *domain.PhoneBook) ([]domain.Contact, error) {
+func (cr contactRepository) GetByPhoneBookId(phoneBookId uint) ([]domain.Contact, error) {
 	var contacts []domain.Contact
 	db, _ := database.GetDatabaseConnection()
 
-	tx := db.Debug().Where("phone_book_id = ?", phoneBook.ID).Find(&contacts)
+	tx := db.Debug().Where("phone_book_id = ?", phoneBookId).Find(&contacts)
 
-	if err := tx.Error; err != nil {
-		return contacts, err
-	}
-
-	return contacts, nil
+	return contacts, tx.Error
 }
 
-func (cr ContactRepositoryImpl) GetByPhoneBookIdIn(phonebookIds []uint) ([]domain.Contact, error) {
+func (cr contactRepository) GetByOfPhoneBookIds(phoneBookIds []uint) ([]domain.Contact, error) {
 	var contacts []domain.Contact
 	db, _ := database.GetDatabaseConnection()
 
-	tx := db.Debug().Where("phone_book_id in ?", phonebookIds).Find(&contacts)
+	tx := db.Debug().Where("phone_book_id in ?", phoneBookIds).Distinct().Find(&contacts)
 
-	if err := tx.Error; err != nil {
-		return contacts, err
-	}
-
-	return contacts, nil
+	return contacts, tx.Error
 }
 
-func (cr ContactRepositoryImpl) GetByUsername(username string) (domain.Contact, error) {
+func (cr contactRepository) GetByUsername(username string) (domain.Contact, error) {
 	var contact domain.Contact
 	db, _ := database.GetDatabaseConnection()
 
-	tx := db.Debug().Where("username = ?", username).Find(&contact)
+	tx := db.Debug().Where("username = ?", username).First(&contact)
 
-	if err := tx.Error; err != nil {
-		return contact, err
-	}
+	return contact, tx.Error
+}
 
-	return contact, nil
+func (cr contactRepository) GetByPhone(phone string) (domain.Contact, error) {
+	var contact domain.Contact
+	db, _ := database.GetDatabaseConnection()
+
+	tx := db.Debug().Where("phone = ?", phone).First(&contact)
+
+	return contact, tx.Error
 }

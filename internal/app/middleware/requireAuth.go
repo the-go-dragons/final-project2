@@ -52,8 +52,6 @@ func RequireAuth(next echo.HandlerFunc) echo.HandlerFunc {
 			// find the user
 			var user domain.User
 			db, _ := database.GetDatabaseConnection()
-			fmt.Printf("claims[\"userId\"]: %v\n", claims["userId"])
-
 			db.First(&user, claims["userId"])
 
 			if user.ID == 0 {
@@ -69,7 +67,6 @@ func RequireAuth(next echo.HandlerFunc) echo.HandlerFunc {
 			}
 
 			c.Set("user", user)
-			fmt.Printf("user: %v\n %v \n", user, user.ID)
 			return next(c)
 		}
 		return c.JSON(http.StatusUnauthorized, MassageResponse{Message: "Invalid token"})

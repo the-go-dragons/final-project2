@@ -4,64 +4,56 @@ import (
 	"errors"
 	"regexp"
 	"strings"
-	"time"
 
 	"github.com/the-go-dragons/final-project2/internal/domain"
 	"github.com/the-go-dragons/final-project2/internal/interfaces/persistence"
 )
 
-type InappropriateWordService struct {
-	wordRepo persistence.InappropriateWordRepository
+type InappropriateWordService interface {
+	Create(input domain.InappropriateWord) (domain.InappropriateWord, error)
+	GetById(id uint) (domain.InappropriateWord, error)
+	GetAll() ([]domain.InappropriateWord, error)
+	Update(input domain.InappropriateWord) (domain.InappropriateWord, error)
+	Delete(id uint) error
+	CheckInappropriateWordsWithRegex(content string) error
+	// CheckInappropriateWords(content string) error
+	GetAllInappropriateWords() ([]string, error)
+}
+
+type inappropriateWordService struct {
+	wordRepository persistence.InappropriateWordRepository
 }
 
 func NewInappropriateWord(
-	wordRepo persistence.InappropriateWordRepository,
+	wordRepository persistence.InappropriateWordRepository,
 ) InappropriateWordService {
-	return InappropriateWordService{
-		wordRepo: wordRepo,
+	return inappropriateWordService{
+		wordRepository: wordRepository,
 	}
 }
 
-type InappropriateWordDto struct {
-	ID   uint   `json:"id"`
-	Word string `json:"word"`
+func (iws inappropriateWordService) Create(input domain.InappropriateWord) (domain.InappropriateWord, error) {
+	return iws.wordRepository.Create(input)
 }
 
-func (iws InappropriateWordService) Create(dto InappropriateWordDto) (domain.InappropriateWord, error) {
-	now := time.Now()
-	wordRecord := domain.InappropriateWord{
-		Word:      dto.Word,
-		CreatedAt: now,
-		UpdatedAt: now,
-	}
-
-	return iws.wordRepo.Create(wordRecord)
+func (iws inappropriateWordService) GetById(id uint) (domain.InappropriateWord, error) {
+	return iws.wordRepository.Get(id)
 }
 
-func (iws InappropriateWordService) GetById(Id uint) (domain.InappropriateWord, error) {
-	return iws.wordRepo.Get(Id)
+func (iws inappropriateWordService) GetAll() ([]domain.InappropriateWord, error) {
+	return iws.wordRepository.GetAll()
 }
 
-func (iws InappropriateWordService) GetAll() ([]domain.InappropriateWord, error) {
-	return iws.wordRepo.GetAll()
+func (iws inappropriateWordService) Update(input domain.InappropriateWord) (domain.InappropriateWord, error) {
+	return iws.wordRepository.Update(input)
 }
 
-func (iws InappropriateWordService) Edit(dto InappropriateWordDto) (domain.InappropriateWord, error) {
-	phonebookRecord := domain.InappropriateWord{
-		ID:        dto.ID,
-		Word:      dto.Word,
-		UpdatedAt: time.Now(),
-	}
-
-	return iws.wordRepo.Update(phonebookRecord)
+func (iws inappropriateWordService) Delete(id uint) error {
+	return iws.wordRepository.Delete(id)
 }
 
-func (iws InappropriateWordService) Delete(Id uint) error {
-	return iws.wordRepo.Delete(Id)
-}
-
-func (iws InappropriateWordService) CheckInappropriateWordsWithRegex(content string) error {
-	words, err := iws.getAllInappropriateWords()
+func (iws inappropriateWordService) CheckInappropriateWordsWithRegex(content string) error {
+	words, err := iws.GetAllInappropriateWords()
 	if err != nil {
 		return err
 	}
@@ -80,31 +72,31 @@ func (iws InappropriateWordService) CheckInappropriateWordsWithRegex(content str
 	return nil
 }
 
-func (iws InappropriateWordService) CheckInappropriateWords(content string) error {
-	words, err := iws.getAllInappropriateWords()
-	if err != nil {
-		return err
-	}
+// func (iws inappropriateWordService) CheckInappropriateWords(content string) error {
+// 	words, err := iws.GetAllInappropriateWords()
+// 	if err != nil {
+// 		return err
+// 	}
 
-	for _, word := range words {
-		if strings.Contains(content, word) {
-			return errors.New("inappropriate Word")
-		}
-	}
+// 	for _, word := range words {
+// 		if strings.Contains(content, word) {
+// 			return errors.New("inappropriate Word")
+// 		}
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
-func (iws InappropriateWordService) getAllInappropriateWords() ([]string, error) {
-	all, err := iws.GetAll()
+func (iws inappropriateWordService) GetAllInappropriateWords() ([]string, error) {
+	words, err := iws.GetAll()
 	if err != nil {
 		return make([]string, 0), err
 	}
 
-	result := make([]string, len(all))
+	var result []string
 
-	for i, word := range all {
-		result[i] = word.Word
+	for _, word := range words {
+		result = append(result, word.Word)
 	}
 
 	return result, nil
