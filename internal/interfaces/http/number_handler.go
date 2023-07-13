@@ -12,6 +12,7 @@ import (
 type NumberHandler interface {
 	Create(echo.Context) error
 	BuyOrRent(echo.Context) error
+	GetAvailables(echo.Context) error
 }
 
 type numberHandler struct {
@@ -48,7 +49,7 @@ func (nh numberHandler) Create(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, Error{Message: "Invalid body request"})
 	}
-	if request.Phone == "" || request.Price == 0 || request.Type == 0 {
+	if request.Phone == "" || request.Type == 0 || (request.Price == 0 && request.Type != 3) {
 		return c.JSON(http.StatusBadRequest, Error{Message: "Missing required fields"})
 	}
 	if CheckTheNumberFormat(request.Phone) != nil {
@@ -95,8 +96,17 @@ func (nh numberHandler) BuyOrRent(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, Response{Message: "Number is not available"})
 	}
 
+	if number.Type == 3 {
+		return c.JSON(http.StatusBadRequest, Response{Message: "Can't buy or rent default number"})
+	}
+
 	if number.Type == 2 && request.Months == 0 {
 		return c.JSON(http.StatusBadRequest, Response{Message: "Invalid months"})
+	}
+
+	subscriptions, _ := nh.numberService.GetNotExpiredSubscriptionsByNumberId(number.ID)
+	if len(subscriptions) != 0 {
+		return c.JSON(http.StatusBadRequest, Response{Message: "Number is rented and not available"})
 	}
 
 	var totalPrice uint32
@@ -128,4 +138,12 @@ func (nh numberHandler) BuyOrRent(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, Response{Message: "Created"})
+}
+
+func (nh numberHandler) GetAvailables(c echo.Context) error {
+	numbers, err := nh.numberService.GetAllAvailableNumbers()
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, Error{Message: "Can't get the available numbers: " + err.Error()})
+	}
+	return c.JSON(http.StatusOK, numbers)
 }

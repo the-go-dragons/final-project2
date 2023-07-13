@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"errors"
 	"time"
 
 	"github.com/the-go-dragons/final-project2/internal/domain"
@@ -12,6 +13,8 @@ type NumberService interface {
 	GetNumberById(uint) (domain.Number, error)
 	BuyOrRentNumber(domain.Number, domain.User, domain.Wallet, uint32, time.Time) (bool, error)
 	GetNumberByPhone(string) (domain.Number, error)
+	GetAllAvailableNumbers() ([]domain.Number, error)
+	GetNotExpiredSubscriptionsByNumberId(uint) ([]domain.Subscription, error)
 }
 
 type numberService struct {
@@ -54,25 +57,38 @@ func (ns numberService) BuyOrRentNumber(
 		return false, err
 	}
 
-	subscription := domain.Subscription{
-		UserID:         user.ID,
-		NumberId:       number.ID,
-		Type:           number.Type,
-		ExpirationDate: expirationDate,
+	// If the number type is for sale, make number unavailable
+	// If the number type is for rent, make a subscription
+	if number.Type == 1 {
+		number.IsAvailable = false
+		ns.numberRepository.Update(number)
+	} else if number.Type == 2 {
+		subscription := domain.Subscription{
+			UserID:         user.ID,
+			NumberId:       number.ID,
+			Type:           number.Type,
+			ExpirationDate: expirationDate,
+		}
+		_, err = ns.subscriptionRepository.Create(subscription)
+
+		if err != nil {
+			return false, err
+		}
+	} else {
+		return false, errors.New("only rent or buy is accepted")
 	}
-
-	_, err = ns.subscriptionRepository.Create(subscription)
-
-	if err != nil {
-		return false, err
-	}
-
-	number.IsAvailable = false
-	ns.numberRepository.Update(number)
 
 	return true, nil
 }
 
 func (ns numberService) GetNumberByPhone(phone string) (domain.Number, error) {
 	return ns.numberRepository.GetByPhone(phone)
+}
+
+func (ns numberService) GetAllAvailableNumbers() ([]domain.Number, error) {
+	return ns.numberRepository.GetAllAvailables()
+}
+
+func (ns numberService) GetNotExpiredSubscriptionsByNumberId(numberId uint) ([]domain.Subscription, error) {
+	return ns.subscriptionRepository.GetNotExpiredByNumber(numberId)
 }
