@@ -80,6 +80,10 @@ func routing(e *echo.Echo) {
 
 	adminHandler := handlers.NewAdminHandler(userUsecase, priceUsecase, smsService)
 
+	smsHistoryrepo := persistence.NewSmsHistoryRepository()
+	smsHistoryUsecase := usecase.NewSmsHistoryUsecase(smsHistoryrepo)
+	smsHistoryHandler := handlers.NewSmsHistoryHandler(smsHistoryUsecase)
+
 	e.POST("/signup", userHandler.Signup)
 	e.POST("/login", userHandler.Login)
 	e.GET("/logout", userHandler.Logout, customeMiddleware.RequireAuth)
@@ -120,6 +124,7 @@ func routing(e *echo.Echo) {
 	e.GET("/admin/disable-user/:userId", adminHandler.DisableUser, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
 	e.GET("/admin/change-priceing", adminHandler.ChangePricing, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
 	e.GET("/admin/sms-report/:userId", adminHandler.GetSMSHistoryByUserId, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
+	e.GET("/admin/sms-history/search", smsHistoryHandler.Search, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
 
 	e.POST("/inappropriate-word", wordHandler.CreateInappropriateWord, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
 	e.GET("/inappropriate-word", wordHandler.GetAll, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
