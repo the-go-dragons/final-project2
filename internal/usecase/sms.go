@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"errors"
+	"regexp"
 	"strings"
 
 	"github.com/the-go-dragons/final-project2/internal/domain"
@@ -46,7 +47,18 @@ func NewSmsService(
 }
 
 func (s smsService) CreateSMS(smsHistory domain.SMSHistory) (domain.SMSHistory, error) {
-	return s.smsRepo.Create(smsHistory)
+    // Replace all digits with length more than 4 with asterisks
+    re := regexp.MustCompile("\\d{5,}")
+    smsHistory.Content = re.ReplaceAllStringFunc(smsHistory.Content, func(match string) string {
+        asterisks := ""
+        for i := 0; i < len(match); i++ {
+            asterisks += "*"
+        }
+        return asterisks
+    })
+
+    // Create the SMS history record in the repository
+    return s.smsRepo.Create(smsHistory)
 }
 
 func (ss smsService) CheckNumberByUserId(user domain.User, phone string) error {

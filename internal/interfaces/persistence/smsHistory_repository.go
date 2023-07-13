@@ -80,6 +80,7 @@ func (shr smsHistoryRepository) GetByUserId(userId uint) ([]domain.SMSHistory, e
 
 	return sms, tx.Error
 }
+
 func (shr smsHistoryRepository) Search(words []string) ([]domain.SMSHistory, error) {
 
 	var smsHistories = make([]domain.SMSHistory, 0)
