@@ -96,6 +96,7 @@ func (shr SmsHistoryRepositoryImpl) GetAll() ([]domain.SMSHistory, error) {
 
 	return smsHistories, nil
 }
+
 func (shr SmsHistoryRepositoryImpl) Search(words []string) ([]domain.SMSHistory, error) {
 
 	var smsHistories = make([]domain.SMSHistory, 0)
