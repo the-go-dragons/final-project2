@@ -16,7 +16,7 @@ type InappropriateWordService interface {
 	Update(input domain.InappropriateWord) (domain.InappropriateWord, error)
 	Delete(id uint) error
 	CheckInappropriateWordsWithRegex(content string) error
-	CheckInappropriateWords(content string) error
+	// CheckInappropriateWords(content string) error
 	GetAllInappropriateWords() ([]string, error)
 }
 
@@ -72,31 +72,31 @@ func (iws inappropriateWordService) CheckInappropriateWordsWithRegex(content str
 	return nil
 }
 
-func (iws inappropriateWordService) CheckInappropriateWords(content string) error {
-	words, err := iws.GetAllInappropriateWords()
-	if err != nil {
-		return err
-	}
+// func (iws inappropriateWordService) CheckInappropriateWords(content string) error {
+// 	words, err := iws.GetAllInappropriateWords()
+// 	if err != nil {
+// 		return err
+// 	}
 
-	for _, word := range words {
-		if strings.Contains(content, word) {
-			return errors.New("inappropriate Word")
-		}
-	}
+// 	for _, word := range words {
+// 		if strings.Contains(content, word) {
+// 			return errors.New("inappropriate Word")
+// 		}
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
 func (iws inappropriateWordService) GetAllInappropriateWords() ([]string, error) {
-	all, err := iws.GetAll()
+	words, err := iws.GetAll()
 	if err != nil {
 		return make([]string, 0), err
 	}
 
-	result := make([]string, len(all))
+	var result []string
 
-	for i, word := range all {
-		result[i] = word.Word
+	for _, word := range words {
+		result = append(result, word.Word)
 	}
 
 	return result, nil

@@ -60,11 +60,10 @@ func (iwr inappropriateWordRepository) Delete(id uint) error {
 }
 
 func (iwr inappropriateWordRepository) GetAll() ([]domain.InappropriateWord, error) {
-	var words = make([]domain.InappropriateWord, 0)
+	var words []domain.InappropriateWord
 	db, _ := database.GetDatabaseConnection()
-	db = db.Model(&words)
 
-	tx := db.Debug().Find(&words)
+	tx := db.Find(&words)
 
 	return words, tx.Error
 }

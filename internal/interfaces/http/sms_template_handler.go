@@ -181,7 +181,7 @@ func (smsh smsTemplateHandler) NewSingleSmsWithTemplate(c echo.Context) error {
 		Content:         content,
 	}
 
-	err = smsh.smsService.SingleSMS(smsHistoryRecord)
+	err = smsh.smsService.SendSMS(smsHistoryRecord)
 	if err != nil {
 
 		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't send sms " + err.Error()})
@@ -251,7 +251,7 @@ func (smsh smsTemplateHandler) NewSingleSmsWithUsernameWithTemplate(c echo.Conte
 		Content:         content,
 	}
 
-	err = smsh.smsService.SingleSMS(smsHistoryRecord)
+	err = smsh.smsService.SendSMS(smsHistoryRecord)
 	if err != nil {
 
 		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't send sms " + err.Error()})

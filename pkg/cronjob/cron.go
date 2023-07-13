@@ -72,7 +72,7 @@ func AddNewJob(
 				ReceiverNumbers: receiverNumbers,
 				Content:         massage,
 			}
-			smsS.CreateSMS(smsHistoryRecord)
+			smsS.SendSMS(smsHistoryRecord)
 
 		}),
 		Repetitions:  repetitionCount,

@@ -11,10 +11,11 @@ import (
 
 type SMSService interface {
 	CreateSMS(domain.SMSHistory) (domain.SMSHistory, error)
-	SingleSMS(domain.SMSHistory) error
+	SendSMS(domain.SMSHistory) error
 	GetSMSHistoryByUserId(uint) ([]domain.SMSHistory, error)
 	SendSMSToPhonebookIds(domain.SMSHistory, []uint) error
 	CheckNumberByUserId(domain.User, string) error
+	SendPeriodSMSToPhonebookIds(domain.SMSHistory, []uint) (domain.SMSHistory, error)
 }
 
 type smsService struct {
@@ -72,7 +73,7 @@ func (ss smsService) CheckNumberByUserId(user domain.User, phone string) error {
 	return nil
 }
 
-func (s smsService) SingleSMS(smsHistory domain.SMSHistory) error {
+func (s smsService) SendSMS(smsHistory domain.SMSHistory) error {
 	// Check the sender number
 	err := s.CheckNumberByUserId(smsHistory.User, smsHistory.SenderNumber)
 	if err != nil {
@@ -98,6 +99,12 @@ func (s smsService) GetSMSHistoryByUserId(userId uint) ([]domain.SMSHistory, err
 }
 
 func (s smsService) SendSMSToPhonebookIds(smsHistory domain.SMSHistory, receiverPhoneBookIds []uint) error {
+	// Check the sender number
+	err := s.CheckNumberByUserId(smsHistory.User, smsHistory.SenderNumber)
+	if err != nil {
+		return err
+	}
+
 	// Get distincted contacts by phone book ids
 	contacts, err := s.contactRepo.GetByOfPhoneBookIds(receiverPhoneBookIds)
 	if err != nil {
@@ -114,16 +121,33 @@ func (s smsService) SendSMSToPhonebookIds(smsHistory domain.SMSHistory, receiver
 	}
 	smsHistory.ReceiverNumbers = strings.Join(receivers, ",")
 
-	// Call the rabbitmq to queue the sms
-	smsBody := rabbitmq.SMSBody{
-		Sender:    smsHistory.SenderNumber,
-		Receivers: smsHistory.ReceiverNumbers,
-		Massage:   smsHistory.Content,
-	}
-	rabbitmq.NewMassage(smsBody)
-
-	// Save the sms history
-	smsHistory, err = s.CreateSMS(smsHistory)
+	s.SendSMS(smsHistory)
 
 	return err
+}
+
+func (s smsService) SendPeriodSMSToPhonebookIds(smsHistory domain.SMSHistory, receiverPhoneBookIds []uint) (domain.SMSHistory, error) {
+	// Check the sender number
+	err := s.CheckNumberByUserId(smsHistory.User, smsHistory.SenderNumber)
+	if err != nil {
+		return smsHistory, err
+	}
+
+	// Get distincted contacts by phone book ids
+	contacts, err := s.contactRepo.GetByOfPhoneBookIds(receiverPhoneBookIds)
+	if err != nil {
+		return smsHistory, err
+	}
+	if len(contacts) == 0 {
+		return smsHistory, errors.New("no contact found")
+	}
+
+	// Get the phones
+	var receivers []string
+	for _, contact := range contacts {
+		receivers = append(receivers, contact.Phone)
+	}
+	smsHistory.ReceiverNumbers = strings.Join(receivers, ",")
+
+	return smsHistory, err
 }
