@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -83,6 +84,10 @@ func routing(e *echo.Echo) {
 	smsHistoryrepo := persistence.NewSmsHistoryRepository()
 	smsHistoryUsecase := usecase.NewSmsHistoryUsecase(smsHistoryrepo)
 	smsHistoryHandler := handlers.NewSmsHistoryHandler(smsHistoryUsecase)
+
+	e.GET("/", func(c echo.Context) error {
+        return c.JSON(http.StatusOK, "welcome to sms panel Q (Go dragons Team)")
+    })
 
 	e.POST("/signup", userHandler.Signup)
 	e.POST("/login", userHandler.Login)
