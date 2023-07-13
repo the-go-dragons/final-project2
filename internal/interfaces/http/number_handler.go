@@ -67,6 +67,7 @@ func (nh numberHandler) Create(c echo.Context) error {
 		Phone: request.Phone,
 		Price: request.Price,
 		Type:  request.Type,
+		User:  nil,
 	}
 	number, err = nh.numberService.CreateNumber(number)
 	if err != nil || number.ID == 0 {
@@ -92,7 +93,7 @@ func (nh numberHandler) BuyOrRent(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, Response{Message: "Number not found"})
 	}
 
-	if !number.IsAvailable {
+	if number.User != nil {
 		return c.JSON(http.StatusBadRequest, Response{Message: "Number is not available"})
 	}
 

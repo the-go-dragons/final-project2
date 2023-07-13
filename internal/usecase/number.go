@@ -57,10 +57,10 @@ func (ns numberService) BuyOrRentNumber(
 		return false, err
 	}
 
-	// If the number type is for sale, make number unavailable
+	// If the number type is for sale, make number for user and unavailable
 	// If the number type is for rent, make a subscription
 	if number.Type == 1 {
-		number.IsAvailable = false
+		number.User = &user
 		ns.numberRepository.Update(number)
 	} else if number.Type == 2 {
 		subscription := domain.Subscription{

@@ -10,10 +10,11 @@ import (
 )
 
 type SMSService interface {
-	CreateSMS(smsHistory domain.SMSHistory) (domain.SMSHistory, error)
-	SingleSMS(smsHistory domain.SMSHistory) error
-	GetSMSHistoryByUserId(userId uint) ([]domain.SMSHistory, error)
-	SendSMSToPhonebookIds(smsHistory domain.SMSHistory, receiverPhoneBookIds []uint) error
+	CreateSMS(domain.SMSHistory) (domain.SMSHistory, error)
+	SingleSMS(domain.SMSHistory) error
+	GetSMSHistoryByUserId(uint) ([]domain.SMSHistory, error)
+	SendSMSToPhonebookIds(domain.SMSHistory, []uint) error
+	CheckNumberByUserId(domain.User, string) error
 }
 
 type smsService struct {
@@ -47,7 +48,37 @@ func (s smsService) CreateSMS(smsHistory domain.SMSHistory) (domain.SMSHistory, 
 	return s.smsRepo.Create(smsHistory)
 }
 
+func (ss smsService) CheckNumberByUserId(user domain.User, phone string) error {
+	number, err := ss.numberRepo.GetByPhone(phone)
+	if err != nil || number.ID == 0 {
+		return errors.New("number not found")
+	}
+
+	if number.Type == domain.Public {
+		return nil
+	} else if number.Type == domain.Sale {
+		// If the number is for sale and is not for the user, return false
+		if number.User == nil || *number.UserID != user.ID {
+			return errors.New("number is not for the user")
+		}
+	} else if number.Type == domain.Rent {
+		subscriptions, _ := ss.subscriptionRepo.GetNotExpiredByNumber(number.ID)
+		if len(subscriptions) != 0 {
+			return errors.New("number is not available")
+		}
+	} else {
+		return errors.New("invalid number type")
+	}
+	return nil
+}
+
 func (s smsService) SingleSMS(smsHistory domain.SMSHistory) error {
+	// Check the sender number
+	err := s.CheckNumberByUserId(smsHistory.User, smsHistory.SenderNumber)
+	if err != nil {
+		return err
+	}
+
 	// Call the rabbitmq to queue the sms
 	smsBody := rabbitmq.SMSBody{
 		Sender:    smsHistory.SenderNumber,
@@ -57,7 +88,7 @@ func (s smsService) SingleSMS(smsHistory domain.SMSHistory) error {
 	rabbitmq.NewMassage(smsBody)
 
 	// Save the sms history
-	smsHistory, err := s.CreateSMS(smsHistory)
+	smsHistory, err = s.CreateSMS(smsHistory)
 
 	return err
 }

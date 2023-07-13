@@ -51,7 +51,7 @@ func (nr numberRepository) GetByPhone(phone string) (domain.Number, error) {
 	var number domain.Number
 	db, _ := database.GetDatabaseConnection()
 
-	tx := db.Debug().Where("phone = ?", phone).First(&number)
+	tx := db.Debug().Preload("User").Where("phone = ?", phone).First(&number)
 
 	return number, tx.Error
 }
@@ -71,7 +71,7 @@ func (nr numberRepository) GetAllAvailables() ([]domain.Number, error) {
 
 	tx := db.Table("numbers").
 		Joins("FULL JOIN subscriptions ON subscriptions.number_id = numbers.id").
-		Where("numbers.is_available = ? AND (subscriptions.id IS NULL OR subscriptions.expiration_date < ?)", true, time.Now()).
+		Where("numbers.user_id IS NULL AND (subscriptions.id IS NULL OR subscriptions.expiration_date < ?)", time.Now()).
 		Find(&numbers)
 
 	return numbers, tx.Error

@@ -85,7 +85,7 @@ func (sh smsHandler) SendSingleSMS(c echo.Context) error {
 	if request.Content == "" || request.ReceiverNumber == "" || request.SenderNumber == "" {
 		return c.JSON(http.StatusBadRequest, Response{Message: "Missing required fields"})
 	}
-	if ValidateSingleSMSBody(request.SenderNumber, request.ReceiverNumber, request.Content) != nil {
+	if err := ValidateSingleSMSBody(request.SenderNumber, request.ReceiverNumber, request.Content); err != nil {
 		return c.JSON(http.StatusBadRequest, Response{Message: err.Error()})
 	}
 
@@ -99,7 +99,7 @@ func (sh smsHandler) SendSingleSMS(c echo.Context) error {
 	}
 	err = sh.smsService.SingleSMS(smsHistoryRecord)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't send sms " + err.Error()})
+		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't send sms: " + err.Error()})
 	}
 
 	return c.JSON(http.StatusOK, Response{Message: "SMS Sent"})
@@ -244,7 +244,6 @@ func (sh smsHandler) SendSMSToPhonebooks(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, Response{Message: "SMS Sent"})
-
 }
 
 // func isUintSlice(arr interface{}) bool {
