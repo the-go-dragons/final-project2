@@ -14,9 +14,8 @@ type SMSService interface {
 	CreateSMS(domain.SMSHistory) (domain.SMSHistory, error)
 	SendSMS(domain.SMSHistory) error
 	GetSMSHistoryByUserId(uint) ([]domain.SMSHistory, error)
-	SendSMSToPhonebookIds(domain.SMSHistory, []uint) error
+	SendSMSToPhonebookIds(domain.SMSHistory, []uint) (domain.SMSHistory, int, error)
 	CheckNumberByUserId(domain.User, string) error
-	SendPeriodSMSToPhonebookIds(domain.SMSHistory, []uint) (domain.SMSHistory, error)
 	GetUserWallet(uint) (domain.Wallet, error)
 	UpdateWallet(domain.Wallet) (domain.Wallet, error)
 }
@@ -61,7 +60,7 @@ func (ss smsService) UpdateWallet(input domain.Wallet) (domain.Wallet, error) {
 
 func (s smsService) CreateSMS(smsHistory domain.SMSHistory) (domain.SMSHistory, error) {
 	// Replace all digits with length more than 4 with asterisks
-	re := regexp.MustCompile("\\d{5,}")
+	re := regexp.MustCompile(`\d{5,}`)
 	smsHistory.Content = re.ReplaceAllStringFunc(smsHistory.Content, func(match string) string {
 		asterisks := ""
 		for i := 0; i < len(match); i++ {
@@ -131,20 +130,20 @@ func (s smsService) GetSMSHistoryByUserId(userId uint) ([]domain.SMSHistory, err
 	return s.smsRepo.GetByUserId(userId)
 }
 
-func (s smsService) SendSMSToPhonebookIds(smsHistory domain.SMSHistory, receiverPhoneBookIds []uint) error {
+func (s smsService) SendSMSToPhonebookIds(smsHistory domain.SMSHistory, receiverPhoneBookIds []uint) (domain.SMSHistory, int, error) {
 	// Check the sender number
 	err := s.CheckNumberByUserId(smsHistory.User, smsHistory.SenderNumber)
 	if err != nil {
-		return err
+		return smsHistory, 0, err
 	}
 
 	// Get distincted contacts by phone book ids
 	contacts, err := s.contactRepo.GetByOfPhoneBookIds(receiverPhoneBookIds)
 	if err != nil {
-		return err
+		return smsHistory, 0, err
 	}
 	if len(contacts) == 0 {
-		return errors.New("no contact found")
+		return smsHistory, 0, errors.New("no contact found")
 	}
 
 	// Get the phones
@@ -154,33 +153,7 @@ func (s smsService) SendSMSToPhonebookIds(smsHistory domain.SMSHistory, receiver
 	}
 	smsHistory.ReceiverNumbers = strings.Join(receivers, ",")
 
-	s.SendSMS(smsHistory)
+	// s.SendSMS(smsHistory)
 
-	return err
-}
-
-func (s smsService) SendPeriodSMSToPhonebookIds(smsHistory domain.SMSHistory, receiverPhoneBookIds []uint) (domain.SMSHistory, error) {
-	// Check the sender number
-	err := s.CheckNumberByUserId(smsHistory.User, smsHistory.SenderNumber)
-	if err != nil {
-		return smsHistory, err
-	}
-
-	// Get distincted contacts by phone book ids
-	contacts, err := s.contactRepo.GetByOfPhoneBookIds(receiverPhoneBookIds)
-	if err != nil {
-		return smsHistory, err
-	}
-	if len(contacts) == 0 {
-		return smsHistory, errors.New("no contact found")
-	}
-
-	// Get the phones
-	var receivers []string
-	for _, contact := range contacts {
-		receivers = append(receivers, contact.Phone)
-	}
-	smsHistory.ReceiverNumbers = strings.Join(receivers, ",")
-
-	return smsHistory, err
+	return smsHistory, len(receivers), err
 }
