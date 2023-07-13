@@ -74,7 +74,7 @@ func routing(e *echo.Echo) {
 
 	smsTemplateRepo := persistence.NewSmsTemplateRepository()
 	smsTemplateUsecase := usecase.NewSmsTemplateService(smsTemplateRepo)
-	smsTemplateHandler := handlers.NewSmsTemplateHandler(smsTemplateUsecase, smsService, contactService, phoneBookService)
+	smsTemplateHandler := handlers.NewSmsTemplateHandler(smsTemplateUsecase, smsService, contactService, phoneBookService, wordService)
 
 	priceRepo := persistence.NewPriceRepository()
 	priceUsecase := usecase.NewPriceService(priceRepo)
@@ -125,6 +125,8 @@ func routing(e *echo.Echo) {
 	e.POST("/templates/sms/periodic", smsTemplateHandler.NewSinglePeriodSmsWithTemplate, customeMiddleware.RequireAuth)
 	e.POST("/templates/sms/username", smsTemplateHandler.NewSingleSmsWithUsernameWithTemplate, customeMiddleware.RequireAuth)
 	e.POST("/templates/sms/username/periodic", smsTemplateHandler.NewSinglePeriodSmsWithUsernameWithTemplate, customeMiddleware.RequireAuth)
+	e.POST("/templates/sms/phonebooks", smsTemplateHandler.NewPhoneBooksSmsWithTemplate, customeMiddleware.RequireAuth)
+	e.POST("/templates/sms/phonebooks/periodic", smsTemplateHandler.NewPhoneBooksPeriodSmsWithTemplate, customeMiddleware.RequireAuth)
 
 	e.GET("/admin/disable-user/:userId", adminHandler.DisableUser, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
 	e.GET("/admin/change-priceing", adminHandler.ChangePricing, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
