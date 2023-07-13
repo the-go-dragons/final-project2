@@ -50,7 +50,7 @@ func (ch contactHandler) CreateContact(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, Error{Message: "Invalid data entry"})
 	}
-	if request.Phone == "" || request.Username == "" {
+	if request.Phone == "" {
 		return c.JSON(http.StatusBadRequest, Response{Message: "Missing required fields"})
 	}
 	if CheckTheNumberFormat(request.Phone) != nil {
@@ -72,20 +72,20 @@ func (ch contactHandler) CreateContact(c echo.Context) error {
 	}
 
 	// Check the dupplication username in the phone book
-	if dupContact, _ := ch.contactService.GetContactByUsername(request.Username); dupContact.ID > 0 {
-		return c.JSON(http.StatusBadRequest, Response{Message: "The username already exists"})
+	if request.Username != "" {
+		if dupContact, _ := ch.contactService.GetContactByUsername(request.Username); dupContact.ID > 0 {
+			return c.JSON(http.StatusBadRequest, Response{Message: "The username already exists"})
+		}
 	}
 
-	dto := domain.Contact{
+	contact := domain.Contact{
 		Username:    request.Username,
 		Phone:       request.Phone,
 		PhoneBookId: uint(phonebookId),
 	}
-
-	_, err = ch.contactService.CreateContact(dto)
+	_, err = ch.contactService.CreateContact(contact)
 	if err != nil {
-
-		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't create number"})
+		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't create contact"})
 	}
 
 	return c.JSON(http.StatusOK, Response{Message: "Created"})

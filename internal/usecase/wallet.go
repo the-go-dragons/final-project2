@@ -79,10 +79,10 @@ func (w WalletService) GetByUserId(id uint) (domain.Wallet, error) {
 func (ws WalletService) CheckTheWalletBalance(user domain.User, price uint) error {
 	wallet, err := ws.walletRepo.GetByUserId(user.ID)
 	if err != nil || wallet.ID == 0 {
-		return errors.New("Can't get the wallet")
+		return errors.New("can't get the wallet")
 	}
 	if wallet.Balance < price {
-		return errors.New("Not enough balance")
+		return errors.New("not enough balance")
 	}
 	return nil
 }
