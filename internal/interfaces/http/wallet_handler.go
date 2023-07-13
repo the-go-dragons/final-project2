@@ -35,6 +35,7 @@ type WalletHandler struct {
 func NewWalletHandler(wallet usecase.WalletService) WalletHandler {
 	return WalletHandler{wallet: &wallet}
 }
+
 func (w WalletHandler) CharageRequest(c echo.Context) error {
 	var req WalletCharageRequest
 	err := c.Bind(&req)

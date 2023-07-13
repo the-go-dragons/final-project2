@@ -1,6 +1,8 @@
 package persistence
 
 import (
+	"strings"
+
 	"github.com/the-go-dragons/final-project2/internal/domain"
 	"github.com/the-go-dragons/final-project2/pkg/database"
 )
@@ -11,6 +13,7 @@ type SmsHistoryRepository interface {
 	Get(id uint) (domain.SMSHistory, error)
 	Delete(id uint) error
 	GetAll() ([]domain.SMSHistory, error)
+	Search(words []string) ([]domain.SMSHistory, error)
 }
 
 type SmsHistoryRepositoryImpl struct {
@@ -87,6 +90,32 @@ func (shr SmsHistoryRepositoryImpl) GetAll() ([]domain.SMSHistory, error) {
 
 	tx := db.Debug().Find(&smsHistories)
 
+	if err := tx.Error; err != nil {
+		return smsHistories, err
+	}
+
+	return smsHistories, nil
+}
+
+func (shr SmsHistoryRepositoryImpl) Search(words []string) ([]domain.SMSHistory, error) {
+	// Concatenate the input array of words into a single string
+	searchString := strings.Join(words, " ")
+
+	var smsHistories = make([]domain.SMSHistory, 0)
+	db, _ := database.GetDatabaseConnection()
+	db = db.Model(&smsHistories)
+
+	// Split the search string into individual words
+	searchWords := strings.Fields(searchString)
+
+	// Build the SQL query using the LIKE operator and search words
+	query := db.Debug().Where("content LIKE ?", "%"+searchWords[0]+"%")
+	for i := 1; i < len(searchWords); i++ {
+		query = query.Or("content LIKE ?", "%"+searchWords[i]+"%")
+	}
+
+	// Execute the query and retrieve SMS history records
+	tx := query.Find(&smsHistories)
 	if err := tx.Error; err != nil {
 		return smsHistories, err
 	}

@@ -39,14 +39,14 @@ func Load() {
 	ssl = config.Config.Database.Ssl
 	timezone = config.Config.Database.Timezone
 	testDb = config.Config.Database.Test
-	// user = "root"
-	// password = "PSUliSks8J3QPrDuGIx9egwo"
-	// db = "final_db"
-	// host = "luca.iran.liara.ir"
-	// port = 31835
-	// ssl = "disable"
-	// timezone = "Asia/tehran"
-	// testDb = "final_db"
+	user = "root"
+	password = "PSUliSks8J3QPrDuGIx9egwo"
+	db = "final_db"
+	host = "luca.iran.liara.ir"
+	port = 31835
+	ssl = "disable"
+	timezone = "Asia/tehran"
+	testDb = "final_db"
 }
 
 func GetDSN() string {

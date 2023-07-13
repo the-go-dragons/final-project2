@@ -88,6 +88,10 @@ func routing(e *echo.Echo) {
 
 	adminHandler := handlers.NewAdminHandler(userUsecase)
 
+	smsHistoryrepo := persistence.NewSmsHistoryRepository()
+	smsHistoryUsecase := usecase.NewSmsHistoryUsecase(smsHistoryrepo)
+	smsHistoryHandler := handlers.NewSmsHistoryHandler(smsHistoryUsecase)
+
 	// TODO: add /users route prefix
 	e.POST("/signup", userHandler.Signup)
 	e.POST("/login", userHandler.Login)
@@ -122,6 +126,7 @@ func routing(e *echo.Echo) {
 	e.POST("/templates/new", smsTemplateHandler.NewSmsTemplate, customeMiddleware.RequireAuth)
 
 	e.GET("/admin/disable-user/:userId", adminHandler.DisableUser, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
+	e.GET("/admin/sms-history/search", smsHistoryHandler.Search, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
 
 	e.POST("/inappropriate-word", wordHandler.Create, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
 	e.PUT("/inappropriate-word", wordHandler.Edit, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
