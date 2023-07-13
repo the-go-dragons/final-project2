@@ -8,6 +8,23 @@ import (
 	"github.com/the-go-dragons/final-project2/internal/usecase"
 )
 
+type UserHandler interface {
+	Login(c echo.Context) error
+	Signup(c echo.Context) error
+	Logout(c echo.Context) error
+	UpdateDefaultNumber(c echo.Context) error
+}
+
+type userHandler struct {
+	userUsecase usecase.UserUsecase
+}
+
+func NewUserHandler(userUsecase usecase.UserUsecase) UserHandler {
+	return userHandler{
+		userUsecase: userUsecase,
+	}
+}
+
 type ChangeRequest struct {
 	NumberID int
 }
@@ -16,17 +33,7 @@ type ChangeResult struct {
 	Status string
 }
 
-type UserHandler struct {
-	userUsecase *usecase.UserUsecase
-}
-
-func NewUserHandler(userUsecase *usecase.UserUsecase) *UserHandler {
-	return &UserHandler{
-		userUsecase: userUsecase,
-	}
-}
-
-func (u UserHandler) UpdateDefaultNumber(c echo.Context) error {
+func (uh userHandler) UpdateDefaultNumber(c echo.Context) error {
 	var request ChangeRequest
 	userId, err := strconv.Atoi(c.Param("userId"))
 	if err != nil {
@@ -36,7 +43,7 @@ func (u UserHandler) UpdateDefaultNumber(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, Error{Message: "Invaild change request"})
 	}
-	_, err = u.userUsecase.UpdateDefaultNumber(userId, request.NumberID)
+	_, err = uh.userUsecase.UpdateDefaultNumber(userId, request.NumberID)
 	if err != nil {
 		switch err.(type) {
 		case usecase.InvalidNumber:

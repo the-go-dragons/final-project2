@@ -1,7 +1,6 @@
 package http
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -13,18 +12,15 @@ type SignupRequest struct {
 	Password string `json:"password"`
 }
 
-func (uh *UserHandler) Signup(c echo.Context) error {
+func (uh userHandler) Signup(c echo.Context) error {
 	var request SignupRequest
 
 	// Check the body data
 	err := c.Bind(&request)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, Response{Message: "Invalid body request"})
+
 	}
-
-	fmt.Printf("request.Username: %v\n", request.Username)
-	fmt.Printf("request.Password: %v\n", request.Password)
-
 	if request.Username == "" || request.Password == "" {
 		return c.JSON(http.StatusBadRequest, Response{Message: "Missing required fields"})
 	}
@@ -39,9 +35,9 @@ func (uh *UserHandler) Signup(c echo.Context) error {
 		Password: request.Password,
 	}
 
-	_, err = uh.userUsecase.CreateUser(&user)
+	_, err = uh.userUsecase.CreateUser(user)
 	if err != nil {
-		fmt.Printf("err: %v\n", err)
+
 		return c.JSON(http.StatusInternalServerError, Response{Message: "Cant create user"})
 	}
 

@@ -39,14 +39,6 @@ func Load() {
 	ssl = config.Config.Database.Ssl
 	timezone = config.Config.Database.Timezone
 	testDb = config.Config.Database.Test
-	// user = "root"
-	// password = "PSUliSks8J3QPrDuGIx9egwo"
-	// db = "final_db"
-	// host = "luca.iran.liara.ir"
-	// port = 31835
-	// ssl = "disable"
-	// timezone = "Asia/tehran"
-	// testDb = "final_db"
 }
 
 func GetDSN() string {
@@ -147,18 +139,18 @@ func AutoMigrateDB() error {
 	}
 
 	err = conn.AutoMigrate(
+		&model.Number{},
+		&model.Price{},
 		&model.User{},
 		&model.Wallet{},
 		&model.Payment{},
 		&model.Transaction{},
+		&model.Subscription{},
 		&model.SMSTemplate{},
 		&model.PhoneBook{},
 		&model.SMSHistory{},
-		&model.CronJob{},
 		&model.Contact{},
-		&model.Subscription{},
-		&model.Number{},
-		
+		&model.InappropriateWord{},
 	)
 
 	// sqlDB, err := conn.DB()

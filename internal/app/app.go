@@ -3,21 +3,12 @@ package app
 import (
 	"fmt"
 
-	"github.com/gorilla/sessions"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	customeMiddleware "github.com/the-go-dragons/final-project2/internal/app/middleware"
 	handlers "github.com/the-go-dragons/final-project2/internal/interfaces/http"
 	"github.com/the-go-dragons/final-project2/internal/interfaces/persistence"
 	"github.com/the-go-dragons/final-project2/internal/usecase"
-	"github.com/the-go-dragons/final-project2/pkg/config"
-)
-
-var (
-	store     = sessions.NewCookieStore()
-	getSecret = func() string {
-		return config.Config.Jwt.Token.Secret.Key
-	}
 )
 
 type App struct {
@@ -41,11 +32,9 @@ func (application *App) Start(portAddress int) error {
 
 func routing(e *echo.Echo) {
 
-	initializeSessionStore()
-	e.Use(middleware.Logger())
+	// e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 	e.Use(middleware.Secure())
-	e.Use(SessionMiddleware())
 
 	walletRepo := persistence.NewWalletRepository()
 	subscrptionRepo := persistence.NewSubscriptionRepository()
@@ -72,82 +61,72 @@ func routing(e *echo.Echo) {
 
 	contactRepo := persistence.NewContactRepository()
 	contactService := usecase.NewContact(phonebookRepo, contactRepo, numberRepo, subscrptionRepo)
-	contactHandler := handlers.NewContactHandler(contactService)
+	contactHandler := handlers.NewContactHandler(contactService, phoneBookService)
 
 	wordRepo := persistence.NewInappropriateWordRepository()
 	wordService := usecase.NewInappropriateWord(wordRepo)
 	wordHandler := handlers.NewInappropriateWordHandler(wordService)
 
 	smsRepository := persistence.NewSmsHistoryRepository()
-	smsService := usecase.NewSmsService(smsRepository, *userRepo, phonebookRepo, numberRepo, subscrptionRepo, contactRepo)
-	smsHandler := handlers.NewSmsHandler(smsService, contactService, &wordService)
+	smsService := usecase.NewSmsService(smsRepository, userRepo, phonebookRepo, numberRepo, subscrptionRepo, contactRepo)
+	smsHandler := handlers.NewSmsHandler(smsService, contactService, phoneBookService, wordService)
 
 	smsTemplateRepo := persistence.NewSmsTemplateRepository()
-	smsTemplateUsecase := usecase.NewSmsTemplateUsecase(smsTemplateRepo)
-	smsTemplateHandler := handlers.NewSmsTemplateHandler(smsTemplateUsecase)
+	smsTemplateUsecase := usecase.NewSmsTemplateService(smsTemplateRepo)
+	smsTemplateHandler := handlers.NewSmsTemplateHandler(smsTemplateUsecase, smsService, contactService, phoneBookService)
 
-	adminHandler := handlers.NewAdminHandler(userUsecase)
+	priceRepo := persistence.NewPriceRepository()
+	priceUsecase := usecase.NewPriceService(priceRepo)
 
-	// TODO: add /users route prefix
+	adminHandler := handlers.NewAdminHandler(userUsecase, priceUsecase, smsService)
+
+	smsHistoryrepo := persistence.NewSmsHistoryRepository()
+	smsHistoryUsecase := usecase.NewSmsHistoryUsecase(smsHistoryrepo)
+	smsHistoryHandler := handlers.NewSmsHistoryHandler(smsHistoryUsecase)
+
 	e.POST("/signup", userHandler.Signup)
 	e.POST("/login", userHandler.Login)
 	e.GET("/logout", userHandler.Logout, customeMiddleware.RequireAuth)
 	e.POST("/users/:userId/update-default-number", userHandler.UpdateDefaultNumber)
 
-	e.GET("/payments/pay/:paymentId", paymentHandler.Pay)
+	e.GET("/payments/pay/:paymentId", paymentHandler.Pay, customeMiddleware.RequireAuth)
 	e.POST("/payments/callback", paymentHandler.Callback)
 
-	e.POST("/wallets/charge-request", walletHandler.CharageRequest)
-	e.POST("/wallets/finalize-charge", walletHandler.FinalizeCharge)
+	e.POST("/wallets/charge-request", walletHandler.CharageRequest, customeMiddleware.RequireAuth)
+	e.POST("/wallets/finalize-charge", walletHandler.FinalizeCharge, customeMiddleware.RequireAuth)
 
-	e.POST("/numbers", numberHandler.Create)
+	e.GET("/numbers", numberHandler.GetAvailables)
+	e.POST("/numbers", numberHandler.Create, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
 	e.POST("/numbers/buy-rent", numberHandler.BuyOrRent, customeMiddleware.RequireAuth)
 
-	e.GET("/phonebook", phoneBookHandler.GetAll)
-	e.GET("/phonebook/username", phoneBookHandler.GetByUserName)
-	e.DELETE("/phonebook", phoneBookHandler.Delete)
+	e.GET("/phonebook", phoneBookHandler.GetAll, customeMiddleware.RequireAuth)
+	e.DELETE("/phonebook/:id", phoneBookHandler.Delete, customeMiddleware.RequireAuth)
 	e.POST("/phonebook", phoneBookHandler.Create, customeMiddleware.RequireAuth)
-	e.PUT("/phonebook", phoneBookHandler.Edit, customeMiddleware.RequireAuth)
 
-	e.POST("/contact", contactHandler.Create)
-	e.PUT("/contact", contactHandler.Edit)
-	e.GET("/contact", contactHandler.GetAll)
-	e.GET("/contact/phonebook", contactHandler.GetByPhoneBook)
-	e.DELETE("/contact", contactHandler.Delete)
+	e.POST("/contact/:phonebookId", contactHandler.CreateContact, customeMiddleware.RequireAuth)
+	e.GET("/contact/:phonebookId", contactHandler.GetByPhoneBook, customeMiddleware.RequireAuth)
+	e.DELETE("/contact/:phonebookId", contactHandler.DeleteContact, customeMiddleware.RequireAuth)
 
-	e.POST("/sms", smsHandler.SendSMS, customeMiddleware.RequireAuth)
-	e.POST("/sms/username", smsHandler.SendSMSByUsername, customeMiddleware.RequireAuth)
+	e.POST("/sms", smsHandler.SendSingleSMS, customeMiddleware.RequireAuth)
+	e.POST("/sms/periodic", smsHandler.SendSinglePeriodSMS, customeMiddleware.RequireAuth)
+	e.POST("/sms/username", smsHandler.SendSingleSMSByUsername, customeMiddleware.RequireAuth)
+	e.POST("/sms/username/periodic", smsHandler.SendSinglePeriodSMSByUsername, customeMiddleware.RequireAuth)
 	e.POST("/sms/phonebooks", smsHandler.SendSMSToPhonebooks, customeMiddleware.RequireAuth)
+	e.POST("/sms/phonebooks/periodic", smsHandler.SendPeriodSMSToPhonebooks, customeMiddleware.RequireAuth)
 
 	e.POST("/templates/new", smsTemplateHandler.NewSmsTemplate, customeMiddleware.RequireAuth)
+	e.GET("/templates", smsTemplateHandler.SmsTemplateList, customeMiddleware.RequireAuth)
+	e.POST("/templates/sms", smsTemplateHandler.NewSingleSmsWithTemplate, customeMiddleware.RequireAuth)
+	e.POST("/templates/sms/periodic", smsTemplateHandler.NewSinglePeriodSmsWithTemplate, customeMiddleware.RequireAuth)
+	e.POST("/templates/sms/username", smsTemplateHandler.NewSingleSmsWithUsernameWithTemplate, customeMiddleware.RequireAuth)
+	e.POST("/templates/sms/username/periodic", smsTemplateHandler.NewSinglePeriodSmsWithUsernameWithTemplate, customeMiddleware.RequireAuth)
 
 	e.GET("/admin/disable-user/:userId", adminHandler.DisableUser, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
+	e.GET("/admin/change-priceing", adminHandler.ChangePricing, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
+	e.GET("/admin/sms-report/:userId", adminHandler.GetSMSHistoryByUserId, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
+	e.GET("/admin/sms-history/search", smsHistoryHandler.Search, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
 
-	e.POST("/inappropriate-word", wordHandler.Create, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
-	e.PUT("/inappropriate-word", wordHandler.Edit, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
+	e.POST("/inappropriate-word", wordHandler.CreateInappropriateWord, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
 	e.GET("/inappropriate-word", wordHandler.GetAll, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
-	e.DELETE("/inappropriate-word", wordHandler.Delete, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
-}
-
-func initializeSessionStore() {
-	store = sessions.NewCookieStore([]byte(getSecret()))
-
-	// Set session options
-	store.Options = &sessions.Options{
-		Path:     "/",
-		MaxAge:   86400, // Session expiration time (in seconds)
-		HttpOnly: true,
-	}
-}
-
-func SessionMiddleware() echo.MiddlewareFunc {
-	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-
-			session, _ := store.Get(c.Request(), "go-dragon-session")
-			c.Set("session", session)
-
-			return next(c)
-		}
-	}
+	e.DELETE("/inappropriate-word/:id", wordHandler.Delete, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
 }

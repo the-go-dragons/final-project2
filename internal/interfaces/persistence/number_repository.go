@@ -1,89 +1,78 @@
 package persistence
 
 import (
+	"time"
+
 	"github.com/the-go-dragons/final-project2/internal/domain"
 	"github.com/the-go-dragons/final-project2/pkg/database"
 )
 
 type NumberRepository interface {
-	Create(input domain.Number) (domain.Number, error)
-	Update(input domain.Number) (domain.Number, error)
-	Get(id uint) (domain.Number, error)
-	GetByPhone(phone string) (domain.Number, error)
+	Create(domain.Number) (domain.Number, error)
+	Update(domain.Number) (domain.Number, error)
+	Get(uint) (domain.Number, error)
+	GetByPhone(string) (domain.Number, error)
 	GetDefault() (domain.Number, error)
+	GetAllAvailables() ([]domain.Number, error)
 }
 
-type NumberRepositoryImpl struct {
+type numberRepository struct {
 }
 
 func NewNumberRepository() NumberRepository {
-	return NumberRepositoryImpl{}
+	return numberRepository{}
 }
 
-func (n NumberRepositoryImpl) Create(input domain.Number) (domain.Number, error) {
+func (nr numberRepository) Create(input domain.Number) (domain.Number, error) {
 	db, _ := database.GetDatabaseConnection()
 	tx := db.Debug().Create(&input)
 
-	if tx.Error != nil {
-		return input, tx.Error
-	}
-
-	return input, nil
+	return input, tx.Error
 }
 
-func (n NumberRepositoryImpl) Update(input domain.Number) (domain.Number, error) {
-	var number domain.Number
-	db, err := database.GetDatabaseConnection()
-	if err != nil {
-		return number, err
-	}
-	_, err = n.Get(input.ID)
-	if err != nil {
-		return number, err
-	}
-	tx := db.Save(input)
-	if err := tx.Error; err != nil {
-		return number, err
-	}
+func (nr numberRepository) Update(input domain.Number) (domain.Number, error) {
+	db, _ := database.GetDatabaseConnection()
 
-	return number, nil
+	tx := db.Save(&input)
+
+	return input, tx.Error
 }
 
-func (a NumberRepositoryImpl) Get(id uint) (domain.Number, error) {
+func (nr numberRepository) Get(id uint) (domain.Number, error) {
 	var number domain.Number
 	db, _ := database.GetDatabaseConnection()
 
 	tx := db.First(&number, id)
 
-	if err := tx.Error; err != nil {
-		return number, err
-	}
-
-	return number, nil
+	return number, tx.Error
 }
 
-func (a NumberRepositoryImpl) GetByPhone(phone string) (domain.Number, error) {
+func (nr numberRepository) GetByPhone(phone string) (domain.Number, error) {
 	var number domain.Number
 	db, _ := database.GetDatabaseConnection()
 
-	tx := db.Debug().Where("Phone = ?", phone).Find(&number)
+	tx := db.Debug().Preload("User").Where("phone = ?", phone).First(&number)
 
-	if err := tx.Error; err != nil {
-		return domain.Number{}, err
-	}
-
-	return number, nil
+	return number, tx.Error
 }
 
-func (a NumberRepositoryImpl) GetDefault() (domain.Number, error) {
+func (nr numberRepository) GetDefault() (domain.Number, error) {
 	var number domain.Number
 	db, _ := database.GetDatabaseConnection()
 
-	tx := db.Debug().Where("Type = ?", domain.Public).First(&number)
+	tx := db.Debug().Where("type = ?", domain.Public).First(&number)
 
-	if err := tx.Error; err != nil {
-		return domain.Number{}, err
-	}
+	return number, tx.Error
+}
 
-	return number, nil
+func (nr numberRepository) GetAllAvailables() ([]domain.Number, error) {
+	var numbers []domain.Number
+	db, _ := database.GetDatabaseConnection()
+
+	tx := db.Table("numbers").
+		Joins("FULL JOIN subscriptions ON subscriptions.number_id = numbers.id").
+		Where("numbers.user_id IS NULL AND (subscriptions.id IS NULL OR subscriptions.expiration_date < ?)", time.Now()).
+		Find(&numbers)
+
+	return numbers, tx.Error
 }

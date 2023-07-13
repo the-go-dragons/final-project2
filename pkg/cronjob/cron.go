@@ -6,53 +6,83 @@ import (
 
 	"github.com/robfig/cron/v3"
 	"github.com/the-go-dragons/final-project2/internal/domain"
-	"github.com/the-go-dragons/final-project2/pkg/database"
+	"github.com/the-go-dragons/final-project2/internal/usecase"
 	"github.com/the-go-dragons/final-project2/pkg/rabbitmq"
 )
 
-var CronJobRunnser *cron.Cron
+var CronJobRunner *cron.Cron
 
 func NewCronJobRunner() {
-	if CronJobRunnser == nil {
-		CronJobRunnser = cron.New()
-		CronJobRunnser.Start()
+	if CronJobRunner == nil {
+		CronJobRunner = cron.New()
+		CronJobRunner.Start()
 	}
 	fmt.Println("Cron runner started")
 }
 
+type JobWithRepetitions struct {
+	EntryID      cron.EntryID
+	Job          cron.Job
+	Repetitions  uint
+	Counter      uint
+	StopOnFinish bool
+}
+
+func (j *JobWithRepetitions) Run() {
+	j.Counter++
+	j.Job.Run()
+
+	if j.StopOnFinish && j.Counter >= j.Repetitions {
+		CronJobRunner.Remove(j.EntryID)
+	}
+}
+
 func AddNewJob(
-	userID uint,
+	user domain.User,
 	period string,
 	massage string,
 	senderNumber string,
-	receiverNumbers []string,
-	repeatationCount uint,
+	receiverNumbers string,
+	repetitionCount uint,
+	smsS usecase.SMSService,
 ) (int, error) {
-	if CronJobRunnser == nil {
+	if CronJobRunner == nil {
 		NewCronJobRunner()
 	}
-	if repeatationCount <= 0 {
-		return 0, errors.New("not enough repeatation count")
+	if repetitionCount <= 0 {
+		return 0, errors.New("not enough repetition count")
 	}
 
-	db, _ := database.GetDatabaseConnection()
-	db.Create(&domain.CronJob{
-		UserID:           userID,
-		Period:           period,
-		RepeatationCount: repeatationCount,
-		Massage:          massage,
-		SenderNumber:     senderNumber,
-		// ReceiverNumbers:  receiverNumbers,
-	})
-	entryID, err := CronJobRunnser.AddFunc(period, func() {
-		rabbitmq.NewMassage(rabbitmq.SMSBody{
-			Sender: senderNumber,
-			// Receivers: receiverNumbers,
-			Massage: massage,
-		})
-		// TODO
-		// db, _ := database.GetDatabaseConnection()
-		// db.First("id = ?", )
-	})
-	return int(entryID), err
+	parsedSchedule, err := cron.ParseStandard(period)
+	if err != nil {
+		return 0, err
+	}
+
+	job := &JobWithRepetitions{
+		Job: cron.FuncJob(func() { // Wrap the actual job function
+			rabbitmq.NewMassage(rabbitmq.SMSBody{
+				Sender:    senderNumber,
+				Receivers: receiverNumbers,
+				Massage:   massage,
+			})
+			smsHistoryRecord := domain.SMSHistory{
+				UserId:          user.ID,
+				User:            user,
+				SenderNumber:    senderNumber,
+				ReceiverNumbers: receiverNumbers,
+				Content:         massage,
+			}
+			smsS.SendSMS(smsHistoryRecord)
+
+		}),
+		Repetitions:  repetitionCount,
+		Counter:      0,
+		StopOnFinish: true,
+	}
+
+	entryID := CronJobRunner.Schedule(parsedSchedule, job)
+
+	job.EntryID = entryID
+
+	return int(entryID), nil
 }

@@ -8,68 +8,52 @@ import (
 )
 
 type SubscriptionRepository interface {
-	Create(input domain.Subscription) (domain.Subscription, error)
+	Create(domain.Subscription) (domain.Subscription, error)
 	GetAll() ([]domain.Subscription, error)
-	GetByUserId(id uint) (domain.Subscription, error)
-	GetByNumber(number domain.Number) (domain.Subscription, error)
+	GetByUserId(uint) (domain.Subscription, error)
+	GetNotExpiredByNumber(uint) ([]domain.Subscription, error)
 }
 
-type SubscriptionRepositoryImpl struct {
+type subscriptionRepository struct {
 }
 
 func NewSubscriptionRepository() SubscriptionRepository {
-	return SubscriptionRepositoryImpl{}
+	return subscriptionRepository{}
 }
 
-func (n SubscriptionRepositoryImpl) Create(input domain.Subscription) (domain.Subscription, error) {
+func (sr subscriptionRepository) Create(input domain.Subscription) (domain.Subscription, error) {
 	db, _ := database.GetDatabaseConnection()
 	tx := db.Debug().Create(&input)
 
-	if tx.Error != nil {
-		return input, tx.Error
-	}
-
-	return input, nil
+	return input, tx.Error
 }
 
-func (n SubscriptionRepositoryImpl) GetAll() ([]domain.Subscription, error) {
+func (sr subscriptionRepository) GetAll() ([]domain.Subscription, error) {
 	db, _ := database.GetDatabaseConnection()
 
 	var subscriptions []domain.Subscription
 
-	tx := db.Find(&subscriptions)
+	tx := db.Preload("User").Preload("Number").Find(&subscriptions)
 
-	if tx.Error != nil {
-		return nil, tx.Error
-	}
-
-	return subscriptions, nil
+	return subscriptions, tx.Error
 }
 
-func (a SubscriptionRepositoryImpl) GetByUserId(id uint) (domain.Subscription, error) {
+func (sr subscriptionRepository) GetByUserId(id uint) (domain.Subscription, error) {
 	var wallet domain.Subscription
 	db, _ := database.GetDatabaseConnection()
 
-	tx := db.Where("user_id = ?", id).First(&wallet)
+	tx := db.Preload("User").Preload("Number").Where("user_id = ?", id).First(&wallet)
 
-	if err := tx.Error; err != nil {
-		return wallet, err
-	}
-
-	return wallet, nil
+	return wallet, tx.Error
 }
 
-func (a SubscriptionRepositoryImpl) GetByNumber(number domain.Number) (domain.Subscription, error) {
-    var subscription domain.Subscription
-    db, _ := database.GetDatabaseConnection()
+func (sr subscriptionRepository) GetNotExpiredByNumber(numberId uint) ([]domain.Subscription, error) {
+	var subscription []domain.Subscription
+	db, _ := database.GetDatabaseConnection()
 
-    tx := db.Where("number_id = ?", number.ID).
-        Where("expiration_date > ?", time.Now()).
-        First(&subscription)
+	tx := db.Preload("User").Preload("Number").Where("number_id = ?", numberId).
+		Where("expiration_date > ", time.Now()).
+		Find(&subscription)
 
-    if err := tx.Error; err != nil {
-        return subscription, err
-    }
-
-    return subscription, nil
+	return subscription, tx.Error
 }
