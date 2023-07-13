@@ -65,16 +65,12 @@ func (iwh inappropriateWordHandler) GetAll(c echo.Context) error {
 }
 
 func (iwh inappropriateWordHandler) Delete(c echo.Context) error {
-	id := c.QueryParam("id")
-	if id == "0" {
-		return c.JSON(http.StatusBadRequest, Error{Message: "Invalid id"})
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil || id == 0 {
+		return c.JSON(http.StatusBadRequest, Response{Message: "Invalid id"})
 	}
 
-	iId, err := strconv.Atoi(id)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't convert id"})
-	}
-	err = iwh.wordService.Delete(uint(iId))
+	err = iwh.wordService.Delete(uint(id))
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't delete word"})
 	}

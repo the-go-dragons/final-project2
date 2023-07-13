@@ -5,6 +5,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/gommon/log"
+	"github.com/the-go-dragons/final-project2/internal/domain"
 	"github.com/the-go-dragons/final-project2/internal/usecase"
 )
 
@@ -20,8 +21,7 @@ type WalletFinalizeCharageResponse struct {
 	WallertId uint
 }
 type WalletCharageRequest struct {
-	Amount   uint64
-	WalletId uint
+	Amount uint64
 }
 
 type WalletFinalizeCharageRequest struct {
@@ -29,19 +29,26 @@ type WalletFinalizeCharageRequest struct {
 }
 
 type WalletHandler struct {
-	wallet *usecase.WalletService
+	walletService usecase.WalletService
 }
 
-func NewWalletHandler(wallet usecase.WalletService) WalletHandler {
-	return WalletHandler{wallet: &wallet}
+func NewWalletHandler(walletService usecase.WalletService) WalletHandler {
+	return WalletHandler{walletService: walletService}
 }
-func (w WalletHandler) CharageRequest(c echo.Context) error {
-	var req WalletCharageRequest
-	err := c.Bind(&req)
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, Error{Message: "Invaild charge request"})
+func (wh WalletHandler) CharageRequest(c echo.Context) error {
+	user := c.Get("user").(domain.User)
+	var request WalletCharageRequest
+	err := c.Bind(&request)
+	if err != nil || request.Amount == 0 {
+		return c.JSON(http.StatusBadRequest, Error{Message: "Invaild amount"})
 	}
-	paymentId, err := w.wallet.ChargeRequest(req.WalletId, req.Amount)
+
+	wallet, err := wh.walletService.GetByUserId(user.ID)
+	if err != nil || wallet.ID == 0 {
+		return c.JSON(http.StatusBadRequest, Error{Message: "Can't get the wallet"})
+	}
+
+	paymentId, err := wh.walletService.ChargeRequest(wallet.ID, request.Amount)
 	if err != nil {
 		switch err.(type) {
 		case usecase.WallertNotFound:
@@ -53,14 +60,14 @@ func (w WalletHandler) CharageRequest(c echo.Context) error {
 	return c.JSON(http.StatusOK, WalletCharageResponse{paymentId})
 }
 
-func (w WalletHandler) FinalizeCharge(c echo.Context) error {
+func (wh WalletHandler) FinalizeCharge(c echo.Context) error {
 	var walletFChargeReq WalletFinalizeCharageRequest
 	err := c.Bind(&walletFChargeReq)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, Error{Message: "Invaild finalize charge request"})
 	}
 
-	walletId, err := w.wallet.FinalizeCharge(walletFChargeReq.PaymentId)
+	walletId, err := wh.walletService.FinalizeCharge(walletFChargeReq.PaymentId)
 	if err != nil {
 		switch err.(type) {
 		case usecase.PaymentNotFound:

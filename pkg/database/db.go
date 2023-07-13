@@ -150,6 +150,7 @@ func AutoMigrateDB() error {
 		&model.PhoneBook{},
 		&model.SMSHistory{},
 		&model.Contact{},
+		&model.InappropriateWord{},
 	)
 
 	// sqlDB, err := conn.DB()

@@ -32,7 +32,7 @@ func (application *App) Start(portAddress int) error {
 
 func routing(e *echo.Echo) {
 
-	e.Use(middleware.Logger())
+	// e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 	e.Use(middleware.Secure())
 
@@ -86,13 +86,13 @@ func routing(e *echo.Echo) {
 	e.POST("/users/:userId/update-default-number", userHandler.UpdateDefaultNumber)
 
 	e.GET("/payments/pay/:paymentId", paymentHandler.Pay, customeMiddleware.RequireAuth)
-	e.POST("/payments/callback", paymentHandler.Callback, customeMiddleware.RequireAuth)
+	e.POST("/payments/callback", paymentHandler.Callback)
 
 	e.POST("/wallets/charge-request", walletHandler.CharageRequest, customeMiddleware.RequireAuth)
 	e.POST("/wallets/finalize-charge", walletHandler.FinalizeCharge, customeMiddleware.RequireAuth)
 
 	e.GET("/numbers", numberHandler.GetAvailables)
-	e.PUT("/numbers", numberHandler.Create, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
+	e.POST("/numbers", numberHandler.Create, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
 	e.POST("/numbers/buy-rent", numberHandler.BuyOrRent, customeMiddleware.RequireAuth)
 
 	e.GET("/phonebook", phoneBookHandler.GetAll, customeMiddleware.RequireAuth)
@@ -122,5 +122,5 @@ func routing(e *echo.Echo) {
 
 	e.POST("/inappropriate-word", wordHandler.CreateInappropriateWord, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
 	e.GET("/inappropriate-word", wordHandler.GetAll, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
-	e.DELETE("/inappropriate-word", wordHandler.Delete, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
+	e.DELETE("/inappropriate-word/:id", wordHandler.Delete, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
 }
