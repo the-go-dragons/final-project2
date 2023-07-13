@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/streadway/amqp"
+	"github.com/the-go-dragons/final-project2/pkg/config"
 )
 
 var rabbitmqChannel *amqp.Channel

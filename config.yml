@@ -15,7 +15,7 @@ pgadmin:
 jwt:
   token:
     expire:
-      hours: 1
+      hours: 24
     secret:
       key: S2jd2el2d92lSAm2wso272Als
 encryption:
