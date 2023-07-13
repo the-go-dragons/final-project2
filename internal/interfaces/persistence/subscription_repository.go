@@ -52,7 +52,7 @@ func (sr subscriptionRepository) GetNotExpiredByNumber(numberId uint) ([]domain.
 	db, _ := database.GetDatabaseConnection()
 
 	tx := db.Preload("User").Preload("Number").Where("number_id = ?", numberId).
-		Where("expiration_date > ", time.Now()).
+		Where("expiration_date > ?", time.Now()).
 		Find(&subscription)
 
 	return subscription, tx.Error

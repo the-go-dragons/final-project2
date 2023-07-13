@@ -72,6 +72,7 @@ func (nr numberRepository) GetAllAvailables() ([]domain.Number, error) {
 	tx := db.Table("numbers").
 		Joins("FULL JOIN subscriptions ON subscriptions.number_id = numbers.id").
 		Where("numbers.user_id IS NULL AND (subscriptions.id IS NULL OR subscriptions.expiration_date < ?)", time.Now()).
+		Order("id").
 		Find(&numbers)
 
 	return numbers, tx.Error

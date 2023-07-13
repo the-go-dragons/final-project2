@@ -67,16 +67,16 @@ func routing(e *echo.Echo) {
 	wordService := usecase.NewInappropriateWord(wordRepo)
 	wordHandler := handlers.NewInappropriateWordHandler(wordService)
 
+	priceRepo := persistence.NewPriceRepository()
+	priceUsecase := usecase.NewPriceService(priceRepo)
+
 	smsRepository := persistence.NewSmsHistoryRepository()
-	smsService := usecase.NewSmsService(smsRepository, userRepo, phonebookRepo, numberRepo, subscrptionRepo, contactRepo)
-	smsHandler := handlers.NewSmsHandler(smsService, contactService, phoneBookService, wordService)
+	smsService := usecase.NewSmsService(smsRepository, userRepo, phonebookRepo, numberRepo, subscrptionRepo, contactRepo, walletRepo)
+	smsHandler := handlers.NewSmsHandler(smsService, contactService, phoneBookService, wordService, priceUsecase)
 
 	smsTemplateRepo := persistence.NewSmsTemplateRepository()
 	smsTemplateUsecase := usecase.NewSmsTemplateService(smsTemplateRepo)
-	smsTemplateHandler := handlers.NewSmsTemplateHandler(smsTemplateUsecase, smsService, contactService, phoneBookService, wordService)
-
-	priceRepo := persistence.NewPriceRepository()
-	priceUsecase := usecase.NewPriceService(priceRepo)
+	smsTemplateHandler := handlers.NewSmsTemplateHandler(smsTemplateUsecase, smsService, contactService, phoneBookService, wordService, priceUsecase)
 
 	adminHandler := handlers.NewAdminHandler(userUsecase, priceUsecase, smsService)
 
@@ -124,7 +124,7 @@ func routing(e *echo.Echo) {
 	e.POST("/templates/sms/phonebooks/periodic", smsTemplateHandler.NewPhoneBooksPeriodSmsWithTemplate, customeMiddleware.RequireAuth)
 
 	e.GET("/admin/disable-user/:userId", adminHandler.DisableUser, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
-	e.GET("/admin/change-priceing", adminHandler.ChangePricing, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
+	e.POST("/admin/change-pricing", adminHandler.ChangePricing, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
 	e.GET("/admin/sms-report/:userId", adminHandler.GetSMSHistoryByUserId, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
 	e.GET("/admin/sms-history/search", smsHistoryHandler.Search, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
 

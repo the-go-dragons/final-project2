@@ -28,6 +28,7 @@ type smsTemplateHandler struct {
 	contactService     usecase.ContactService
 	phoneBookService   usecase.PhoneBookService
 	wordService        usecase.InappropriateWordService
+	priceService       usecase.PriceService
 }
 
 func NewSmsTemplateHandler(
@@ -36,6 +37,7 @@ func NewSmsTemplateHandler(
 	contactService usecase.ContactService,
 	phoneBookService usecase.PhoneBookService,
 	wordService usecase.InappropriateWordService,
+	priceService usecase.PriceService,
 ) SMSTemplateHandler {
 	return smsTemplateHandler{
 		smsTemplateService: smsTemplateService,
@@ -43,6 +45,7 @@ func NewSmsTemplateHandler(
 		contactService:     contactService,
 		phoneBookService:   phoneBookService,
 		wordService:        wordService,
+		priceService:       priceService,
 	}
 }
 
@@ -200,6 +203,19 @@ func (smsh smsTemplateHandler) NewSingleSmsWithTemplate(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, Response{Message: "Inappropriate word found"})
 	}
 
+	// Check the wallet balance and sms price
+	price, err := smsh.priceService.GetPrice()
+	if err != nil || price.ID == 0 {
+		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't get price model"})
+	}
+	wallet, err := smsh.smsService.GetUserWallet(user.ID)
+	if err != nil || wallet.ID == 0 {
+		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't get user wallet"})
+	}
+	if price.SingleSMS > wallet.Balance {
+		return c.JSON(http.StatusBadRequest, Response{Message: "Not enough wallet balance"})
+	}
+
 	// Send sms and new sms history
 	smsHistoryRecord := domain.SMSHistory{
 		UserId:          user.ID,
@@ -212,6 +228,13 @@ func (smsh smsTemplateHandler) NewSingleSmsWithTemplate(c echo.Context) error {
 	err = smsh.smsService.SendSMS(smsHistoryRecord)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't send sms " + err.Error()})
+	}
+
+	// Change the wallet balance
+	wallet.Balance = wallet.Balance - price.SingleSMS
+	wallet, err = smsh.smsService.UpdateWallet(wallet)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't change wallet balance"})
 	}
 
 	return c.JSON(http.StatusOK, Response{Message: "SMS Sent"})
@@ -275,6 +298,19 @@ func (smsh smsTemplateHandler) NewSingleSmsWithUsernameWithTemplate(c echo.Conte
 		return c.JSON(http.StatusBadRequest, Response{Message: "Inappropriate word found"})
 	}
 
+	// Check the wallet balance and sms price
+	price, err := smsh.priceService.GetPrice()
+	if err != nil || price.ID == 0 {
+		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't get price model"})
+	}
+	wallet, err := smsh.smsService.GetUserWallet(user.ID)
+	if err != nil || wallet.ID == 0 {
+		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't get user wallet"})
+	}
+	if price.SingleSMS > wallet.Balance {
+		return c.JSON(http.StatusBadRequest, Response{Message: "Not enough wallet balance"})
+	}
+
 	// Send sms and new sms history
 	smsHistoryRecord := domain.SMSHistory{
 		UserId:          user.ID,
@@ -288,6 +324,13 @@ func (smsh smsTemplateHandler) NewSingleSmsWithUsernameWithTemplate(c echo.Conte
 	if err != nil {
 
 		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't send sms " + err.Error()})
+	}
+
+	// Change the wallet balance
+	wallet.Balance = wallet.Balance - price.SingleSMS
+	wallet, err = smsh.smsService.UpdateWallet(wallet)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't change wallet balance"})
 	}
 
 	return c.JSON(http.StatusOK, Response{Message: "SMS Sent"})
@@ -333,8 +376,28 @@ func (smsh smsTemplateHandler) NewSinglePeriodSmsWithTemplate(c echo.Context) er
 		return c.JSON(http.StatusBadRequest, Response{Message: "Inappropriate word found"})
 	}
 
+	// Check the wallet balance and sms price
+	price, err := smsh.priceService.GetPrice()
+	if err != nil || price.ID == 0 {
+		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't get price model"})
+	}
+	wallet, err := smsh.smsService.GetUserWallet(user.ID)
+	if err != nil || wallet.ID == 0 {
+		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't get user wallet"})
+	}
+	if price.SingleSMS*request.RepeatationCount > wallet.Balance {
+		return c.JSON(http.StatusBadRequest, Response{Message: "Not enough wallet balance"})
+	}
+
 	// Add new cron job
 	cronjob.AddNewJob(user, request.Period, content, request.SenderNumber, request.ReceiverNumber, request.RepeatationCount, smsh.smsService)
+
+	// Change the wallet balance
+	wallet.Balance = wallet.Balance - price.SingleSMS
+	wallet, err = smsh.smsService.UpdateWallet(wallet)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't change wallet balance"})
+	}
 
 	return c.JSON(http.StatusOK, Response{Message: "SMS Sent"})
 }
@@ -397,8 +460,28 @@ func (smsh smsTemplateHandler) NewSinglePeriodSmsWithUsernameWithTemplate(c echo
 		return c.JSON(http.StatusBadRequest, Response{Message: "Inappropriate word found"})
 	}
 
+	// Check the wallet balance and sms price
+	price, err := smsh.priceService.GetPrice()
+	if err != nil || price.ID == 0 {
+		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't get price model"})
+	}
+	wallet, err := smsh.smsService.GetUserWallet(user.ID)
+	if err != nil || wallet.ID == 0 {
+		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't get user wallet"})
+	}
+	if price.SingleSMS*request.RepeatationCount > wallet.Balance {
+		return c.JSON(http.StatusBadRequest, Response{Message: "Not enough wallet balance"})
+	}
+
 	// Add new cron job
 	cronjob.AddNewJob(user, request.Period, content, request.SenderNumber, contact.Phone, request.RepeatationCount, smsh.smsService)
+
+	// Change the wallet balance
+	wallet.Balance = wallet.Balance - price.SingleSMS
+	wallet, err = smsh.smsService.UpdateWallet(wallet)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't change wallet balance"})
+	}
 
 	return c.JSON(http.StatusOK, Response{Message: "SMS Sent"})
 }
