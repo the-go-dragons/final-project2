@@ -66,7 +66,7 @@ func (cr contactRepository) GetByOfPhoneBookIds(phoneBookIds []uint) ([]domain.C
 	var contacts []domain.Contact
 	db, _ := database.GetDatabaseConnection()
 
-	tx := db.Debug().Where("phone_book_id in ?", phoneBookIds).Distinct().Find(&contacts)
+	tx := db.Debug().Where("phone_book_id in ?", phoneBookIds).Distinct("phone").Find(&contacts)
 
 	return contacts, tx.Error
 }
