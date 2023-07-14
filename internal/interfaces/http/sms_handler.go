@@ -260,6 +260,12 @@ func (sh smsHandler) SendSinglePeriodSMS(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, Response{Message: err.Error()})
 	}
 
+	// Check for the sender number
+	err = sh.smsService.CheckNumberByUserId(user, request.SenderNumber)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, Response{Message: err.Error()})
+	}
+
 	// Add new cron job
 	cronjob.AddNewJob(user, request.Period, request.Content, request.SenderNumber, request.ReceiverNumber, request.RepeatationCount, sh.smsService)
 
@@ -315,6 +321,12 @@ func (sh smsHandler) SendSinglePeriodSMSByUsername(c echo.Context) error {
 
 	// Check the wallet balance and sms price
 	wallet, price, err := sh.CheckTheWalletBallence(user, request.RepeatationCount)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, Response{Message: err.Error()})
+	}
+
+	// Check for the sender number
+	err = sh.smsService.CheckNumberByUserId(user, request.SenderNumber)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, Response{Message: err.Error()})
 	}
@@ -418,6 +430,12 @@ func (sh smsHandler) SendPeriodSMSToPhonebooks(c echo.Context) error {
 
 	// Check the wallet balance and sms price
 	wallet, price, err := sh.CheckTheWalletBallence(user, uint(receiversLen)*request.RepeatationCount)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, Response{Message: err.Error()})
+	}
+
+	// Check for the sender number
+	err = sh.smsService.CheckNumberByUserId(user, request.SenderNumber)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, Response{Message: err.Error()})
 	}

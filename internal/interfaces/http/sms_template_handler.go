@@ -394,6 +394,12 @@ func (smsh smsTemplateHandler) NewSinglePeriodSmsWithTemplate(c echo.Context) er
 		return c.JSON(http.StatusBadRequest, Response{Message: err.Error()})
 	}
 
+	// Check for the sender number
+	err = smsh.smsService.CheckNumberByUserId(user, request.SenderNumber)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, Response{Message: err.Error()})
+	}
+
 	// Add new cron job
 	cronjob.AddNewJob(user, request.Period, content, request.SenderNumber, request.ReceiverNumber, request.RepeatationCount, smsh.smsService)
 
@@ -467,6 +473,12 @@ func (smsh smsTemplateHandler) NewSinglePeriodSmsWithUsernameWithTemplate(c echo
 
 	// Check the wallet balance and sms price
 	wallet, price, err := smsh.CheckTheWalletBallence(user, request.RepeatationCount)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, Response{Message: err.Error()})
+	}
+
+	// Check for the sender number
+	err = smsh.smsService.CheckNumberByUserId(user, request.SenderNumber)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, Response{Message: err.Error()})
 	}
@@ -610,6 +622,12 @@ func (smsh smsTemplateHandler) NewPhoneBooksPeriodSmsWithTemplate(c echo.Context
 
 	// Check the wallet balance and sms price
 	wallet, price, err := smsh.CheckTheWalletBallence(user, uint(receiversLen)*request.RepeatationCount)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, Response{Message: err.Error()})
+	}
+
+	// Check for the sender number
+	err = smsh.smsService.CheckNumberByUserId(user, request.SenderNumber)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, Response{Message: err.Error()})
 	}
