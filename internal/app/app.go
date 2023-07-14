@@ -129,6 +129,7 @@ func routing(e *echo.Echo) {
 	e.POST("/templates/sms/phonebooks", smsTemplateHandler.NewPhoneBooksSmsWithTemplate, customeMiddleware.RequireAuth)
 	e.POST("/templates/sms/phonebooks/periodic", smsTemplateHandler.NewPhoneBooksPeriodSmsWithTemplate, customeMiddleware.RequireAuth)
 
+	e.GET("/admin/users", adminHandler.UsersList, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
 	e.GET("/admin/disable-user/:userId", adminHandler.DisableUser, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
 	e.POST("/admin/change-pricing", adminHandler.ChangePricing, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
 	e.GET("/admin/sms-report/:userId", adminHandler.GetSMSHistoryByUserId, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)

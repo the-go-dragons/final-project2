@@ -13,6 +13,7 @@ type AdminHandler interface {
 	DisableUser(echo.Context) error
 	ChangePricing(echo.Context) error
 	GetSMSHistoryByUserId(echo.Context) error
+	UsersList(echo.Context) error
 }
 
 type adminHandler struct {
@@ -45,6 +46,17 @@ type ChangePricingResponse struct {
 type SMSHistoryResponse struct {
 	Count        int                 `json:"count"`
 	SMSHistories []domain.SMSHistory `json:"sms_histories"`
+}
+
+func (ah adminHandler) UsersList(c echo.Context) error {
+	_ = c.Get("user").(domain.User)
+
+	users, err := ah.userUsecase.GetAll()
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't get users list"})
+	}
+
+	return c.JSON(http.StatusOK, users)
 }
 
 func (ah adminHandler) DisableUser(c echo.Context) error {

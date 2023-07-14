@@ -59,7 +59,10 @@ func (uh userHandler) Login(c echo.Context) error {
 	// Check for existence of user
 	user, err = uh.userUsecase.GetUserByUsername(request.Username)
 	if err != nil {
-		return c.JSON(http.StatusConflict, Response{Message: "No user found with this credentials"})
+		return c.JSON(http.StatusNotFound, Response{Message: "No user found with this credentials"})
+	}
+	if !user.IsActive {
+		return c.JSON(http.StatusNotFound, Response{Message: "User not found"})
 	}
 
 	// Check if password is correct
