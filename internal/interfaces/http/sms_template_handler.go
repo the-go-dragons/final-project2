@@ -21,6 +21,7 @@ type SMSTemplateHandler interface {
 	NewSinglePeriodSmsWithUsernameWithTemplate(echo.Context) error
 	NewPhoneBooksSmsWithTemplate(echo.Context) error
 	NewPhoneBooksPeriodSmsWithTemplate(echo.Context) error
+	CheckTheWalletBallence(domain.User, uint) (domain.Wallet, uint, error)
 }
 
 type smsTemplateHandler struct {
@@ -111,7 +112,7 @@ type PhoneBookPeriodSmsWithTemplateRequest struct {
 }
 
 func (smsh smsTemplateHandler) CheckTheWalletBallence(user domain.User, receiversCount uint) (domain.Wallet, uint, error) {
-	// Check the wallet balance and sms price
+	// Check the wallet and sms price
 	price, err := smsh.priceService.GetPrice()
 	if err != nil || price.ID == 0 {
 		return domain.Wallet{}, 0, errors.New("can't get price model")
@@ -120,10 +121,18 @@ func (smsh smsTemplateHandler) CheckTheWalletBallence(user domain.User, receiver
 	if err != nil || wallet.ID == 0 {
 		return domain.Wallet{}, 0, errors.New("can't get user wallet")
 	}
-	if price.SingleSMS*receiversCount > wallet.Balance {
+
+	// Check the price type and wallet ballance
+	var p uint
+	if receiversCount == 1 {
+		p = price.SingleSMS
+	} else {
+		p = price.MultipleSMS
+	}
+	if p*receiversCount > wallet.Balance {
 		return domain.Wallet{}, 0, errors.New("not enough wallet balance")
 	}
-	return wallet, price.SingleSMS * receiversCount, nil
+	return wallet, p * receiversCount, nil
 }
 
 func (smsh smsTemplateHandler) NewSmsTemplate(c echo.Context) error {

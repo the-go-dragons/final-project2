@@ -17,7 +17,6 @@ type SMSHandler interface {
 	SendSinglePeriodSMSByUsername(c echo.Context) error
 	SendSMSToPhonebooks(c echo.Context) error
 	SendPeriodSMSToPhonebooks(c echo.Context) error
-	CheckTheWalletBallence(domain.User, uint) (domain.Wallet, uint, error)
 }
 
 type smsHandler struct {
@@ -89,7 +88,7 @@ type PhoneBookPeriodSMSRequest struct {
 }
 
 func (sh smsHandler) CheckTheWalletBallence(user domain.User, receiversCount uint) (domain.Wallet, uint, error) {
-	// Check the wallet balance and sms price
+	// Check the wallet and sms price
 	price, err := sh.priceService.GetPrice()
 	if err != nil || price.ID == 0 {
 		return domain.Wallet{}, 0, errors.New("can't get price model")
@@ -98,10 +97,18 @@ func (sh smsHandler) CheckTheWalletBallence(user domain.User, receiversCount uin
 	if err != nil || wallet.ID == 0 {
 		return domain.Wallet{}, 0, errors.New("can't get user wallet")
 	}
-	if price.SingleSMS*receiversCount > wallet.Balance {
+
+	// Check the price type and wallet ballance
+	var p uint
+	if receiversCount == 1 {
+		p = price.SingleSMS
+	} else {
+		p = price.MultipleSMS
+	}
+	if p*receiversCount > wallet.Balance {
 		return domain.Wallet{}, 0, errors.New("not enough wallet balance")
 	}
-	return wallet, price.SingleSMS * receiversCount, nil
+	return wallet, p * receiversCount, nil
 }
 
 func (sh smsHandler) SendSingleSMS(c echo.Context) error {
