@@ -2,6 +2,7 @@ package http
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/gommon/log"
@@ -85,4 +86,15 @@ func (wh WalletHandler) FinalizeCharge(c echo.Context) error {
 	}
 	return c.JSON(http.StatusOK, WalletFinalizeCharageResponse{walletId})
 
+}
+
+func (wh WalletHandler) GetUserBalance(c echo.Context) error {
+	user := c.Get("user").(domain.User)
+
+	wallet, err := wh.walletService.GetByUserId(user.ID)
+	if err != nil || wallet.ID == 0 {
+		return c.JSON(http.StatusBadRequest, Response{Message: "Can't get the wallet"})
+	}
+
+	return c.JSON(http.StatusOK, Response{Message: strconv.Itoa(int(wallet.Balance))})
 }
