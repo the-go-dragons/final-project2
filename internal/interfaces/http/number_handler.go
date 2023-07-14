@@ -129,7 +129,7 @@ func (nh numberHandler) BuyOrRent(c echo.Context) error {
 	}
 
 	if userWallet.Balance < uint(totalPrice) {
-		return c.JSON(http.StatusInternalServerError, Response{Message: "your wallet has not enough balance to pay"})
+		return c.JSON(http.StatusBadRequest, Response{Message: "your wallet has not enough balance to pay"})
 	}
 
 	_, err = nh.numberService.BuyOrRentNumber(number, user, userWallet, totalPrice, expirationDate)

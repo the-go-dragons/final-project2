@@ -246,7 +246,7 @@ func (smsh smsTemplateHandler) NewSingleSmsWithTemplate(c echo.Context) error {
 
 	err = smsh.smsService.SendSMS(smsHistoryRecord)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't send sms " + err.Error()})
+		return c.JSON(http.StatusBadRequest, Response{Message: "Can't send sms " + err.Error()})
 	}
 
 	// Change the wallet balance
@@ -335,7 +335,7 @@ func (smsh smsTemplateHandler) NewSingleSmsWithUsernameWithTemplate(c echo.Conte
 	err = smsh.smsService.SendSMS(smsHistoryRecord)
 	if err != nil {
 
-		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't send sms " + err.Error()})
+		return c.JSON(http.StatusBadRequest, Response{Message: "Can't send sms " + err.Error()})
 	}
 
 	// Change the wallet balance
@@ -532,7 +532,7 @@ func (smsh smsTemplateHandler) NewPhoneBooksSmsWithTemplate(c echo.Context) erro
 	}, request.ReceiverPhoneBooks)
 
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't send sms: " + err.Error()})
+		return c.JSON(http.StatusBadRequest, Response{Message: "Can't send sms: " + err.Error()})
 	}
 
 	// Check the wallet balance and sms price
@@ -544,7 +544,7 @@ func (smsh smsTemplateHandler) NewPhoneBooksSmsWithTemplate(c echo.Context) erro
 	err = smsh.smsService.SendSMS(smsHistory)
 
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't send sms: " + err.Error()})
+		return c.JSON(http.StatusBadRequest, Response{Message: "Can't send sms: " + err.Error()})
 	}
 
 	// Change the wallet balance
@@ -605,7 +605,7 @@ func (smsh smsTemplateHandler) NewPhoneBooksPeriodSmsWithTemplate(c echo.Context
 	}, request.ReceiverPhoneBooks)
 
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't send sms: " + err.Error()})
+		return c.JSON(http.StatusBadRequest, Response{Message: "Can't send sms: " + err.Error()})
 	}
 
 	// Check the wallet balance and sms price
