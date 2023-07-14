@@ -15,6 +15,7 @@ type NumberService interface {
 	GetNumberByPhone(string) (domain.Number, error)
 	GetAllAvailableNumbers() ([]domain.Number, error)
 	GetNotExpiredSubscriptionsByNumberId(uint) ([]domain.Subscription, error)
+	GetUserNumbers(uint) ([]domain.Number, error)
 }
 
 type numberService struct {
@@ -87,6 +88,10 @@ func (ns numberService) GetNumberByPhone(phone string) (domain.Number, error) {
 
 func (ns numberService) GetAllAvailableNumbers() ([]domain.Number, error) {
 	return ns.numberRepository.GetAllAvailables()
+}
+
+func (ns numberService) GetUserNumbers(userId uint) ([]domain.Number, error) {
+	return ns.numberRepository.GetUserNumbers(userId)
 }
 
 func (ns numberService) GetNotExpiredSubscriptionsByNumberId(numberId uint) ([]domain.Subscription, error) {

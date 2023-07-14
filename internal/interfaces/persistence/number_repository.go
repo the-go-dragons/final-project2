@@ -1,6 +1,7 @@
 package persistence
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/the-go-dragons/final-project2/internal/domain"
@@ -14,6 +15,7 @@ type NumberRepository interface {
 	GetByPhone(string) (domain.Number, error)
 	GetDefault() (domain.Number, error)
 	GetAllAvailables() ([]domain.Number, error)
+	GetUserNumbers(uint) ([]domain.Number, error)
 }
 
 type numberRepository struct {
@@ -75,5 +77,19 @@ func (nr numberRepository) GetAllAvailables() ([]domain.Number, error) {
 		Order("id").
 		Find(&numbers)
 
+	return numbers, tx.Error
+}
+
+func (nr numberRepository) GetUserNumbers(userId uint) ([]domain.Number, error) {
+	var numbers []domain.Number
+	db, _ := database.GetDatabaseConnection()
+
+	tx := db.Table("numbers").
+		Joins("FULL JOIN subscriptions ON subscriptions.number_id = numbers.id").
+		Where("subscriptions.id IS NOT NULL AND subscriptions.expiration_date > ? AND subscriptions.user_id = ?", time.Now(), userId).
+		Or("numbers.user_id = ? OR numbers.type = ?", userId, 3).
+		Order("id").
+		Find(&numbers)
+	fmt.Println(tx.Statement.SQL.String())
 	return numbers, tx.Error
 }
