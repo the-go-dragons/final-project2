@@ -87,9 +87,6 @@ func (s SaderatGateway) GetPaymentPage(token string) PaymentPage {
 
 func (s SaderatGateway) VerifyPayment(data map[string][]string) (domain.Payment, error) {
 	payment := domain.Payment{}
-	for key, val := range data {
-		fmt.Println(key, " : ", val)
-	}
 	vdata := url.Values{
 		"Tid":            {s.terminalId},
 		"digitalreceipt": {data["digitalreceipt"][0]},
@@ -100,9 +97,6 @@ func (s SaderatGateway) VerifyPayment(data map[string][]string) (domain.Payment,
 	}
 	var result map[string]string
 	json.NewDecoder(res.Body).Decode(&result)
-	for key, val := range result {
-		fmt.Println(key, " : ", val)
-	}
 	if result["Status"] != "Ok" {
 		return payment, errors.New("payment faild")
 	}

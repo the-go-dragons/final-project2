@@ -21,6 +21,7 @@ type SMSTemplateHandler interface {
 	NewSinglePeriodSmsWithUsernameWithTemplate(echo.Context) error
 	NewPhoneBooksSmsWithTemplate(echo.Context) error
 	NewPhoneBooksPeriodSmsWithTemplate(echo.Context) error
+	CheckTheWalletBallence(domain.User, uint) (domain.Wallet, uint, error)
 }
 
 type smsTemplateHandler struct {
@@ -111,7 +112,7 @@ type PhoneBookPeriodSmsWithTemplateRequest struct {
 }
 
 func (smsh smsTemplateHandler) CheckTheWalletBallence(user domain.User, receiversCount uint) (domain.Wallet, uint, error) {
-	// Check the wallet balance and sms price
+	// Check the wallet and sms price
 	price, err := smsh.priceService.GetPrice()
 	if err != nil || price.ID == 0 {
 		return domain.Wallet{}, 0, errors.New("can't get price model")
@@ -120,10 +121,18 @@ func (smsh smsTemplateHandler) CheckTheWalletBallence(user domain.User, receiver
 	if err != nil || wallet.ID == 0 {
 		return domain.Wallet{}, 0, errors.New("can't get user wallet")
 	}
-	if price.SingleSMS*receiversCount > wallet.Balance {
+
+	// Check the price type and wallet ballance
+	var p uint
+	if receiversCount == 1 {
+		p = price.SingleSMS
+	} else {
+		p = price.MultipleSMS
+	}
+	if p*receiversCount > wallet.Balance {
 		return domain.Wallet{}, 0, errors.New("not enough wallet balance")
 	}
-	return wallet, price.SingleSMS * receiversCount, nil
+	return wallet, p * receiversCount, nil
 }
 
 func (smsh smsTemplateHandler) NewSmsTemplate(c echo.Context) error {
@@ -237,7 +246,7 @@ func (smsh smsTemplateHandler) NewSingleSmsWithTemplate(c echo.Context) error {
 
 	err = smsh.smsService.SendSMS(smsHistoryRecord)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't send sms " + err.Error()})
+		return c.JSON(http.StatusBadRequest, Response{Message: "Can't send sms " + err.Error()})
 	}
 
 	// Change the wallet balance
@@ -326,7 +335,7 @@ func (smsh smsTemplateHandler) NewSingleSmsWithUsernameWithTemplate(c echo.Conte
 	err = smsh.smsService.SendSMS(smsHistoryRecord)
 	if err != nil {
 
-		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't send sms " + err.Error()})
+		return c.JSON(http.StatusBadRequest, Response{Message: "Can't send sms " + err.Error()})
 	}
 
 	// Change the wallet balance
@@ -381,6 +390,12 @@ func (smsh smsTemplateHandler) NewSinglePeriodSmsWithTemplate(c echo.Context) er
 
 	// Check the wallet balance and sms price
 	wallet, price, err := smsh.CheckTheWalletBallence(user, request.RepeatationCount)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, Response{Message: err.Error()})
+	}
+
+	// Check for the sender number
+	err = smsh.smsService.CheckNumberByUserId(user, request.SenderNumber)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, Response{Message: err.Error()})
 	}
@@ -462,6 +477,12 @@ func (smsh smsTemplateHandler) NewSinglePeriodSmsWithUsernameWithTemplate(c echo
 		return c.JSON(http.StatusBadRequest, Response{Message: err.Error()})
 	}
 
+	// Check for the sender number
+	err = smsh.smsService.CheckNumberByUserId(user, request.SenderNumber)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, Response{Message: err.Error()})
+	}
+
 	// Add new cron job
 	cronjob.AddNewJob(user, request.Period, content, request.SenderNumber, contact.Phone, request.RepeatationCount, smsh.smsService)
 
@@ -523,7 +544,7 @@ func (smsh smsTemplateHandler) NewPhoneBooksSmsWithTemplate(c echo.Context) erro
 	}, request.ReceiverPhoneBooks)
 
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't send sms: " + err.Error()})
+		return c.JSON(http.StatusBadRequest, Response{Message: "Can't send sms: " + err.Error()})
 	}
 
 	// Check the wallet balance and sms price
@@ -535,7 +556,7 @@ func (smsh smsTemplateHandler) NewPhoneBooksSmsWithTemplate(c echo.Context) erro
 	err = smsh.smsService.SendSMS(smsHistory)
 
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't send sms: " + err.Error()})
+		return c.JSON(http.StatusBadRequest, Response{Message: "Can't send sms: " + err.Error()})
 	}
 
 	// Change the wallet balance
@@ -596,11 +617,17 @@ func (smsh smsTemplateHandler) NewPhoneBooksPeriodSmsWithTemplate(c echo.Context
 	}, request.ReceiverPhoneBooks)
 
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't send sms: " + err.Error()})
+		return c.JSON(http.StatusBadRequest, Response{Message: "Can't send sms: " + err.Error()})
 	}
 
 	// Check the wallet balance and sms price
 	wallet, price, err := smsh.CheckTheWalletBallence(user, uint(receiversLen)*request.RepeatationCount)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, Response{Message: err.Error()})
+	}
+
+	// Check for the sender number
+	err = smsh.smsService.CheckNumberByUserId(user, request.SenderNumber)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, Response{Message: err.Error()})
 	}

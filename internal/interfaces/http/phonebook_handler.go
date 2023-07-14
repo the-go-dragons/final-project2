@@ -63,7 +63,7 @@ func (pbh PhoneBookHandler) Delete(c echo.Context) error {
 	user := c.Get("user").(domain.User)
 	phonebookId, err := strconv.Atoi(c.Param("id"))
 	if err != nil || phonebookId == 0 {
-		return c.JSON(http.StatusInternalServerError, Response{Message: "Invalid id"})
+		return c.JSON(http.StatusBadRequest, Response{Message: "Invalid id"})
 	}
 
 	phonebook, err := pbh.phonebookService.GetPhoneBookById(uint(phonebookId))

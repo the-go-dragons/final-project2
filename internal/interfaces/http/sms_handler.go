@@ -17,7 +17,6 @@ type SMSHandler interface {
 	SendSinglePeriodSMSByUsername(c echo.Context) error
 	SendSMSToPhonebooks(c echo.Context) error
 	SendPeriodSMSToPhonebooks(c echo.Context) error
-	CheckTheWalletBallence(domain.User, uint) (domain.Wallet, uint, error)
 }
 
 type smsHandler struct {
@@ -89,7 +88,7 @@ type PhoneBookPeriodSMSRequest struct {
 }
 
 func (sh smsHandler) CheckTheWalletBallence(user domain.User, receiversCount uint) (domain.Wallet, uint, error) {
-	// Check the wallet balance and sms price
+	// Check the wallet and sms price
 	price, err := sh.priceService.GetPrice()
 	if err != nil || price.ID == 0 {
 		return domain.Wallet{}, 0, errors.New("can't get price model")
@@ -98,10 +97,18 @@ func (sh smsHandler) CheckTheWalletBallence(user domain.User, receiversCount uin
 	if err != nil || wallet.ID == 0 {
 		return domain.Wallet{}, 0, errors.New("can't get user wallet")
 	}
-	if price.SingleSMS*receiversCount > wallet.Balance {
+
+	// Check the price type and wallet ballance
+	var p uint
+	if receiversCount == 1 {
+		p = price.SingleSMS
+	} else {
+		p = price.MultipleSMS
+	}
+	if p*receiversCount > wallet.Balance {
 		return domain.Wallet{}, 0, errors.New("not enough wallet balance")
 	}
-	return wallet, price.SingleSMS * receiversCount, nil
+	return wallet, p * receiversCount, nil
 }
 
 func (sh smsHandler) SendSingleSMS(c echo.Context) error {
@@ -142,7 +149,7 @@ func (sh smsHandler) SendSingleSMS(c echo.Context) error {
 	}
 	err = sh.smsService.SendSMS(smsHistoryRecord)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't send sms: " + err.Error()})
+		return c.JSON(http.StatusBadRequest, Response{Message: "Can't send sms: " + err.Error()})
 	}
 
 	// Change the wallet balance
@@ -212,7 +219,7 @@ func (sh smsHandler) SendSingleSMSByUsername(c echo.Context) error {
 	err = sh.smsService.SendSMS(smsHistoryRecord)
 	if err != nil {
 
-		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't send sms: " + err.Error()})
+		return c.JSON(http.StatusBadRequest, Response{Message: "Can't send sms: " + err.Error()})
 	}
 
 	// Change the wallet balance
@@ -249,6 +256,12 @@ func (sh smsHandler) SendSinglePeriodSMS(c echo.Context) error {
 
 	// Check the wallet balance and sms price
 	wallet, price, err := sh.CheckTheWalletBallence(user, request.RepeatationCount)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, Response{Message: err.Error()})
+	}
+
+	// Check for the sender number
+	err = sh.smsService.CheckNumberByUserId(user, request.SenderNumber)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, Response{Message: err.Error()})
 	}
@@ -312,6 +325,12 @@ func (sh smsHandler) SendSinglePeriodSMSByUsername(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, Response{Message: err.Error()})
 	}
 
+	// Check for the sender number
+	err = sh.smsService.CheckNumberByUserId(user, request.SenderNumber)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, Response{Message: err.Error()})
+	}
+
 	// Add new cron job
 	cronjob.AddNewJob(user, request.Period, request.Content, request.SenderNumber, contact.Phone, request.RepeatationCount, sh.smsService)
 
@@ -353,7 +372,7 @@ func (sh smsHandler) SendSMSToPhonebooks(c echo.Context) error {
 	}, request.ReceiverPhoneBooks)
 
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't send sms: " + err.Error()})
+		return c.JSON(http.StatusBadRequest, Response{Message: "Can't send sms: " + err.Error()})
 	}
 
 	// Check the wallet balance and sms price
@@ -406,11 +425,17 @@ func (sh smsHandler) SendPeriodSMSToPhonebooks(c echo.Context) error {
 	}, request.ReceiverPhoneBooks)
 
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, Response{Message: "Can't send sms: " + err.Error()})
+		return c.JSON(http.StatusBadRequest, Response{Message: "Can't send sms: " + err.Error()})
 	}
 
 	// Check the wallet balance and sms price
 	wallet, price, err := sh.CheckTheWalletBallence(user, uint(receiversLen)*request.RepeatationCount)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, Response{Message: err.Error()})
+	}
+
+	// Check for the sender number
+	err = sh.smsService.CheckNumberByUserId(user, request.SenderNumber)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, Response{Message: err.Error()})
 	}

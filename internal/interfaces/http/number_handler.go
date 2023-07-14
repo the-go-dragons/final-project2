@@ -13,6 +13,7 @@ type NumberHandler interface {
 	Create(echo.Context) error
 	BuyOrRent(echo.Context) error
 	GetAvailables(echo.Context) error
+	GetUserNumbers(echo.Context) error
 }
 
 type numberHandler struct {
@@ -93,7 +94,7 @@ func (nh numberHandler) BuyOrRent(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, Response{Message: "Number not found"})
 	}
 
-	if number.User != nil {
+	if number.User != nil || number.UserID != nil {
 		return c.JSON(http.StatusBadRequest, Response{Message: "Number is not available"})
 	}
 
@@ -129,7 +130,7 @@ func (nh numberHandler) BuyOrRent(c echo.Context) error {
 	}
 
 	if userWallet.Balance < uint(totalPrice) {
-		return c.JSON(http.StatusInternalServerError, Response{Message: "your wallet has not enough balance to pay"})
+		return c.JSON(http.StatusBadRequest, Response{Message: "your wallet has not enough balance to pay"})
 	}
 
 	_, err = nh.numberService.BuyOrRentNumber(number, user, userWallet, totalPrice, expirationDate)
@@ -144,7 +145,16 @@ func (nh numberHandler) BuyOrRent(c echo.Context) error {
 func (nh numberHandler) GetAvailables(c echo.Context) error {
 	numbers, err := nh.numberService.GetAllAvailableNumbers()
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, Error{Message: "Can't get the available numbers: " + err.Error()})
+		return c.JSON(http.StatusInternalServerError, Error{Message: "Can't get the available numbers: " + err.Error()})
+	}
+	return c.JSON(http.StatusOK, numbers)
+}
+
+func (nh numberHandler) GetUserNumbers(c echo.Context) error {
+	user := c.Get("user").(domain.User)
+	numbers, err := nh.numberService.GetUserNumbers(user.ID)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, Error{Message: "Can't get the available numbers: " + err.Error()})
 	}
 	return c.JSON(http.StatusOK, numbers)
 }

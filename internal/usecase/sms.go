@@ -60,7 +60,7 @@ func (ss smsService) UpdateWallet(input domain.Wallet) (domain.Wallet, error) {
 
 func (s smsService) CreateSMS(smsHistory domain.SMSHistory) (domain.SMSHistory, error) {
 	// Replace all digits with length more than 4 with asterisks
-	re := regexp.MustCompile(`\d{5,}`)
+	re := regexp.MustCompile(`\d{4,}`)
 	smsHistory.Content = re.ReplaceAllStringFunc(smsHistory.Content, func(match string) string {
 		asterisks := ""
 		for i := 0; i < len(match); i++ {

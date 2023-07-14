@@ -86,8 +86,8 @@ func routing(e *echo.Echo) {
 	smsHistoryHandler := handlers.NewSmsHistoryHandler(smsHistoryUsecase)
 
 	e.GET("/", func(c echo.Context) error {
-        return c.JSON(http.StatusOK, "welcome to sms panel Q (Go dragons Team)")
-    })
+		return c.JSON(http.StatusOK, "welcome to sms panel Q (Go dragons Team)")
+	})
 
 	e.POST("/signup", userHandler.Signup)
 	e.POST("/login", userHandler.Login)
@@ -101,6 +101,7 @@ func routing(e *echo.Echo) {
 	e.POST("/wallets/finalize-charge", walletHandler.FinalizeCharge, customeMiddleware.RequireAuth)
 
 	e.GET("/numbers", numberHandler.GetAvailables)
+	e.GET("/numbers/user", numberHandler.GetUserNumbers, customeMiddleware.RequireAuth)
 	e.POST("/numbers", numberHandler.Create, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
 	e.POST("/numbers/buy-rent", numberHandler.BuyOrRent, customeMiddleware.RequireAuth)
 
@@ -128,6 +129,7 @@ func routing(e *echo.Echo) {
 	e.POST("/templates/sms/phonebooks", smsTemplateHandler.NewPhoneBooksSmsWithTemplate, customeMiddleware.RequireAuth)
 	e.POST("/templates/sms/phonebooks/periodic", smsTemplateHandler.NewPhoneBooksPeriodSmsWithTemplate, customeMiddleware.RequireAuth)
 
+	e.GET("/admin/users", adminHandler.UsersList, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
 	e.GET("/admin/disable-user/:userId", adminHandler.DisableUser, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
 	e.POST("/admin/change-pricing", adminHandler.ChangePricing, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
 	e.GET("/admin/sms-report/:userId", adminHandler.GetSMSHistoryByUserId, customeMiddleware.RequireAuth, customeMiddleware.RequireAdmin)
